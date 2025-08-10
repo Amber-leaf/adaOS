@@ -1,3 +1,4 @@
+#include "core.h"
 #include <stdint.h>
 #include <stddef.h>
 #include <stdbool.h>
@@ -105,6 +106,21 @@ static void hcf(void) {
     }
 }
 
+void move_cursor() {
+    struct limine_framebuffer *framebuffer = framebuffer_request.response->framebuffers[0];
+
+    cursorx++;
+    if ((cursorx + 1) * 8 * font_size >= framebuffer->width) {
+        cursorx = 0;
+        if(cursory < framebuffer->height / (8 * font_size))
+            cursory++;
+        else {
+            scroll(1);
+            cursory--;
+        }
+    }
+}
+
 void print_bitmap(uint64_t bitmap, uint32_t x, uint32_t y) {
     struct limine_framebuffer *framebuffer = framebuffer_request.response->framebuffers[0];
     volatile uint32_t *fb_ptr = framebuffer->address;
@@ -148,9 +164,6 @@ void clear(void) {
 }
 
 void putc(uint8_t c) {
-    struct limine_framebuffer *framebuffer = framebuffer_request.response->framebuffers[0];
-    uint32_t width = framebuffer->width;
-
     uint32_t x = cursorx * 8 * font_size;
     uint32_t y = cursory * 8 * font_size;
 
@@ -160,22 +173,25 @@ void putc(uint8_t c) {
     
     print_bitmap(char_bitmap, x, y);
 
-    cursorx++;
-    if ((cursorx + 1) * 8 * font_size >= width) {
-        cursorx = 0;
-        cursory++;
-    }
+    move_cursor();
 }
 
 
 void puts(const char *s) {
     uint8_t i = 0;
+    struct limine_framebuffer *framebuffer = framebuffer_request.response->framebuffers[0];
+
     for(;;) {
         switch (s[i]) {
             case 0x00:
                 goto done;
             case 0x0A:
-                cursory += 1;
+                if(cursory < framebuffer->height / (8 * font_size))
+                    cursory++;
+                else {
+                    scroll(1);
+                    //cursory--;
+                }
                 __attribute__ ((fallthrough));
             case 0x0D:
                 cursorx = 0;
@@ -188,10 +204,7 @@ void puts(const char *s) {
     done:;
 }
 
-void puti(uint32_t n) {
-    struct limine_framebuffer *framebuffer = framebuffer_request.response->framebuffers[0];
-    uint32_t width = framebuffer->width;
-    
+void puti(uint32_t n) {    
     uint32_t div = 1;
     uint32_t digit_count = 1;
     while ( div <= n / 10 ) {
@@ -210,11 +223,7 @@ void puti(uint32_t n) {
     
         print_bitmap(char_bitmap, x, y);
 
-        cursorx++;
-        if ((cursorx + 1) * 8 * font_size >= width) {
-            cursorx = 0;
-            cursory++;
-        }
+        move_cursor();
 
         n %= div;
         div /= 10;
@@ -230,8 +239,8 @@ void scroll(uint8_t lines) {
     struct limine_framebuffer *framebuffer = framebuffer_request.response->framebuffers[0];
     uint32_t *start = framebuffer->address;
 
-    for (int n = 0; n < lines; n++) {
-        for (int i = 0; i < framebuffer->height / (8 * font_size) - 1; i++) {
+    for (uint8_t n = 0; n < lines; n++) {
+        for (uint16_t i = 0; i < framebuffer->height / (8 * font_size) - 1; i++) {
             memcpy(start, start + framebuffer->width * (8 * font_size), framebuffer->width * 4 * 8 * font_size);
             start += framebuffer->width * (8 * font_size);
         }
@@ -267,10 +276,10 @@ void kmain(void) {
     #endif
     struct limine_framebuffer *framebuffer = framebuffer_request.response->framebuffers[0];
 
-    for (int i = 0; i < framebuffer->height / (8 * font_size); i++) {
+    for (int i = 0; i < framebuffer->height / (8 * font_size) + 1; i++) {
       puti(i); crnl();
     }
-    scroll(5);
+    //scroll(0);
 
     hcf();
 }
