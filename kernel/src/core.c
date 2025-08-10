@@ -276,7 +276,7 @@ void kmain(void) {
     #endif
     struct limine_framebuffer *framebuffer = framebuffer_request.response->framebuffers[0];
 
-    for (int i = 0; i < framebuffer->height / (8 * font_size) -5; i++) {
+    for (int i = 0; i < framebuffer->height / (8 * font_size) -6; i++) {
       puti(i); crnl();
     }
     scroll(3);
