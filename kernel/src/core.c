@@ -130,20 +130,6 @@ void print_bitmap(uint64_t bitmap, uint32_t x, uint32_t y) {
 
 }
 
-void scroll(uint8_t lines) {
-    struct limine_framebuffer *framebuffer = framebuffer_request.response->framebuffers[0];
-    uint32_t *start = framebuffer->address;
-
-    memcpy(start, start + framebuffer->width * 4 * font_size, framebuffer->width * 4 * font_size);
-    #if 0
-    for (int n = 0; n < lines; n++) {
-        for (int i = 0; i < framebuffer->height * 8 * font_size; i++) {
-
-        }
-    }
-    #endif
-}
-
 void set_text_colour(uint32_t colour) {
     on_colour = colour;
 }
@@ -240,6 +226,20 @@ void crnl(void) {
     puts("\r\n");
 }
 
+void scroll(uint8_t lines) {
+    struct limine_framebuffer *framebuffer = framebuffer_request.response->framebuffers[0];
+    uint32_t *start = framebuffer->address;
+
+    for (int n = 0; n < lines; n++) {
+        for (int i = 0; i < framebuffer->height / (8 * font_size) - 1; i++) {
+            memcpy(start, start + framebuffer->width * (8 * font_size), framebuffer->width * 4 * 8 * font_size);
+            start += framebuffer->width * (8 * font_size);
+        }
+        memset(start, 0x00, framebuffer->width * 4 * 8 * font_size);
+        start = framebuffer->address;
+    }
+}
+
 void kmain(void) {
     // Ensure the bootloader actually understands our base revision (see spec).
     if (LIMINE_BASE_REVISION_SUPPORTED == false) {
@@ -252,6 +252,7 @@ void kmain(void) {
         hcf();
     }
 
+    #if 0
     for (int i = 0; i < 128*2; i++) {
         putc(i);
     }
@@ -261,14 +262,15 @@ void kmain(void) {
     puts("aaa");
     crnl();
 
+
+    puti(framebuffer->width); puts(" "); puti(framebuffer->height); crnl();
+    #endif
     struct limine_framebuffer *framebuffer = framebuffer_request.response->framebuffers[0];
 
-    puti(framebuffer->width); puts(" "); puti(framebuffer->height);  crnl();
-    clear();
-    puti(framebuffer->pitch); crnl();
-
-    debug("debug text");
-    scroll(1);
+    for (int i = 0; i < framebuffer->height / (8 * font_size); i++) {
+      puti(i); crnl();
+    }
+    scroll(5);
 
     hcf();
 }
