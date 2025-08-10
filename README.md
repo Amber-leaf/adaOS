@@ -1,5 +1,5 @@
 # adaOS
 A small in development OS.
 
-# Features:
+## Features:
 like nothing right now
