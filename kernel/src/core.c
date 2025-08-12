@@ -97,7 +97,39 @@ static uint8_t font_size = 3;
 static uint32_t on_colour = 0xffffff;
 static uint32_t off_colour = 0x000000;
 
+static uint32_t cursorx_max;
+static uint32_t cursory_max;
+static uint32_t bytes_per_line;
+static uint32_t bytes_per_screen;
+static uint32_t height;
+static uint32_t width;
+static uint32_t pitch;
+
 extern uint64_t font[128];
+
+struct xy {
+    uint32_t x;
+    uint32_t y;
+};
+
+struct limine_framebuffer* get_framebuffer(void) {
+    return framebuffer_request.response->framebuffers[0];
+}
+
+void calculate_screen_constants(void) {
+    struct limine_framebuffer* fb = get_framebuffer();
+
+    width = fb->width;
+    height = fb->height;
+
+    cursorx_max = width / (8 * font_size);
+    cursory_max = height / (8 * font_size);
+
+    bytes_per_line = width * 4 * 8 * font_size;
+    bytes_per_screen = width * height * 4;
+
+    pitch = fb->pitch / 4;
+}
 
 // Halt and catch fire function.
 static void hcf(void) {
@@ -106,26 +138,35 @@ static void hcf(void) {
     }
 }
 
-void move_cursor() {
-    struct limine_framebuffer *framebuffer = framebuffer_request.response->framebuffers[0];
-
-    cursorx++;
-    if ((cursorx + 1) * 8 * font_size >= framebuffer->width) {
-        cursorx = 0;
-        if(cursory < framebuffer->height / (8 * font_size))
-            cursory++;
-        else {
+void advance_cursor(void) {
+    if (cursorx + 1 > cursorx_max) {
+        if (cursory + 1 > cursory_max) {
             scroll(1);
-            cursory--;
+            cursorx = 0;
         }
+        else {
+            cursory ++;
+            cursorx = 0;
+        }
+    }
+    else {
+        cursorx++;
+    }
+}
+
+void nl_cursor() {
+    if (cursory + 1 > cursory_max) {
+        scroll(1);
+        cursorx = 0;
+    }
+    else {
+        cursorx = 0;
+        cursory ++;
     }
 }
 
 void print_bitmap(uint64_t bitmap, uint32_t x, uint32_t y) {
-    struct limine_framebuffer *framebuffer = framebuffer_request.response->framebuffers[0];
-    volatile uint32_t *fb_ptr = framebuffer->address;
-
-    uint32_t pitch = framebuffer->pitch / 4; // in pixels, not bytes
+    uint32_t *fb_ptr = get_framebuffer()->address;
     
     for (int i = 0; i < 8; ++i) {
         uint8_t row = (bitmap >> ((7 - i) * 8)) & 0xFF;
@@ -142,8 +183,6 @@ void print_bitmap(uint64_t bitmap, uint32_t x, uint32_t y) {
             }
         }
     }
-
-
 }
 
 void set_text_colour(uint32_t colour) {
@@ -155,43 +194,40 @@ void set_text_bg_colour(uint32_t colour) {
 }
 
 void clear(void) {
-    struct limine_framebuffer *framebuffer = framebuffer_request.response->framebuffers[0];
-    uint32_t *fb_ptr = framebuffer->address;
+    uint32_t *fb_ptr = get_framebuffer()->address;
 
-    memset(fb_ptr, 0x00, (framebuffer->width * framebuffer->height) * 4);
+    memset(fb_ptr, 0x00, bytes_per_screen);
 
     cursorx = cursory = 0;
 }
 
-void putc(uint8_t c) {
-    uint32_t x = cursorx * 8 * font_size;
-    uint32_t y = cursory * 8 * font_size;
+struct xy calculate_xy(void) {
+    struct xy xy_;
+    xy_.x = cursorx * 8 * font_size;
+    xy_.y = cursory * 8 * font_size;
+    return xy_;
+}
 
+void putc(uint8_t c) {
     uint64_t char_bitmap = font[c];
     if (c > 127)
         char_bitmap = font[0]; // Missing char
     
-    print_bitmap(char_bitmap, x, y);
+    print_bitmap(char_bitmap, calculate_xy().x, calculate_xy().y);
 
-    move_cursor();
+    advance_cursor();
 }
 
 
 void puts(const char *s) {
     uint8_t i = 0;
-    struct limine_framebuffer *framebuffer = framebuffer_request.response->framebuffers[0];
 
     for(;;) {
         switch (s[i]) {
             case 0x00:
-                goto done;
+                return;
             case 0x0A:
-                if(cursory < framebuffer->height / (8 * font_size))
-                    cursory++;
-                else {
-                    scroll(1);
-                    //cursory--;
-                }
+                nl_cursor();
                 __attribute__ ((fallthrough));
             case 0x0D:
                 cursorx = 0;
@@ -201,7 +237,6 @@ void puts(const char *s) {
         }
         i++;
     }
-    done:;
 }
 
 void puti(uint32_t n) {    
@@ -212,18 +247,15 @@ void puti(uint32_t n) {
         div *= 10;
     }
     while ( digit_count > 0 ) {
-        uint32_t x = cursorx * 8 * font_size;
-        uint32_t y = cursory * 8 * font_size;
-
         uint32_t digit = (n / div) + 48;
 
         uint64_t char_bitmap = font[digit];
         if (digit > 57 || digit < 48)
             char_bitmap = font[0]; // Missing char
     
-        print_bitmap(char_bitmap, x, y);
+        print_bitmap(char_bitmap, calculate_xy().x, calculate_xy().y);
 
-        move_cursor();
+        advance_cursor();
 
         n %= div;
         div /= 10;
@@ -231,21 +263,17 @@ void puti(uint32_t n) {
     }
 }
 
-void crnl(void) {
+void crlf(void) {
     puts("\r\n");
 }
 
 void scroll(uint8_t lines) {
-    struct limine_framebuffer *framebuffer = framebuffer_request.response->framebuffers[0];
-    uint32_t *start = framebuffer->address;
+    uint32_t *start = get_framebuffer()->address;
 
     for (uint8_t n = 0; n < lines; n++) {
-        for (uint16_t i = 0; i < framebuffer->height / (8 * font_size) - 1; i++) {
-            memcpy(start, start + framebuffer->width * (8 * font_size), framebuffer->width * 4 * 8 * font_size);
-            start += framebuffer->width * (8 * font_size);
-        }
-        memset(start, 0x00, framebuffer->width * 4 * 8 * font_size);
-        start = framebuffer->address;
+        memcpy(start, start + cursorx_max, bytes_per_screen);
+        memset(start, 0x00, bytes_per_line);
+        start += cursorx;
     }
 }
 
@@ -261,6 +289,8 @@ void kmain(void) {
         hcf();
     }
 
+    calculate_screen_constants();
+
     #if 0
     for (int i = 0; i < 128*2; i++) {
         putc(i);
@@ -274,12 +304,24 @@ void kmain(void) {
 
     puti(framebuffer->width); puts(" "); puti(framebuffer->height); crnl();
     #endif
-    struct limine_framebuffer *framebuffer = framebuffer_request.response->framebuffers[0];
 
-    for (int i = 0; i < framebuffer->height / (8 * font_size) -6; i++) {
-      puti(i); crnl();
-    }
-    scroll(3);
+    //for (int i = 0; i < 4; i++) {
+    //  puti(i); crlf();
+    //}
+
+    puts("cursorx_max: "); puti(cursorx_max); crlf();
+    puts("cursory_max: "); puti(cursory_max); crlf();
+    puts("bytes_per_line: "); puti(bytes_per_line); crlf();
+    puts("bytes_per_screen: "); puti(bytes_per_screen); crlf();
+    puts("height: "); puti(height); crlf();
+    puts("width: "); puti(width); crlf();
+    puts("pitch: "); puti(pitch); crlf();
+
+
+    puts("the quick brown dog jumps over the lazy fox.");
+    puts("the quick brown dog jumps over the lazy fox.");
+
+    //scroll(1);
 
     hcf();
 }
