@@ -1,9 +1,9 @@
 #ifndef FOO_H_   /* Include guard */
 #define FOO_H_
 #include <stdint.h>
-void putc(uint8_t c);
-void puts(const char *s);
-void puti(uint32_t n);
+void k_putc(uint8_t c);
+void k_puts(const char *s);
+void k_puti(uint32_t n);
 void crlf(void);
 void set_text_bg_colour(uint32_t colour);
 void set_text_colour(uint32_t colour);
