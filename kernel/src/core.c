@@ -1,5 +1,6 @@
 #include "core.h"
 #include "log.h"
+#include "printf.h"
 
 #include <limine.h>
 #include <stdbool.h>
@@ -95,9 +96,11 @@ int memcmp(const void *s1, const void *s2, size_t n) {
 
 // ---------- Kernel Start + Core Functions ----------
 
+static char *version_string = "v0.0.1";
+
 static uint32_t cursorx = 0;
 static uint32_t cursory = 0;
-static uint8_t font_size = 3;
+static uint8_t font_size = 2;
 static uint32_t on_colour = 0xffffff;
 static uint32_t off_colour = 0x000000;
 
@@ -164,7 +167,7 @@ void advance_cursor(void) {
   }
 }
 
-void print_bitmap(uint64_t bitmap, uint32_t x, uint32_t y) {
+void print_bitmap(uint64_t bitmap, uint32_t x, uint32_t y, uint8_t skew) {
   for (int i = 0; i < 8; ++i) {
     uint8_t row = (bitmap >> ((7 - i) * 8)) & 0xFF;
 
@@ -172,8 +175,8 @@ void print_bitmap(uint64_t bitmap, uint32_t x, uint32_t y) {
       uint32_t color = (row & (1 << (7 - n))) ? on_colour : off_colour;
 
       for (int dy = 0; dy < font_size; ++dy) {
-        for (int dx = 0; dx < font_size; ++dx) {
-          uint32_t px = x + n * font_size + dx;
+        for (int dx = 0; dx < font_size; dx++) {
+          uint32_t px = x + n * font_size + dx + skew * (7 - i);
           uint32_t py = y + i * font_size + dy;
           fb_ptr[py * pitch + px] = color;
         }
@@ -201,7 +204,7 @@ void k_putc(uint8_t c) {
   if (c > 127)
     char_bitmap = font[0]; // Missing char
 
-  print_bitmap(char_bitmap, calculate_x(), calculate_y());
+  print_bitmap(char_bitmap, calculate_x(), calculate_y(), 0);
 
   advance_cursor();
 }
@@ -226,6 +229,28 @@ void k_puts(const char *s) {
   }
 }
 
+void k_puts_ital(const char *s, uint8_t skew) {
+  uint8_t i = 0;
+
+  for (;;) {
+    switch (s[i]) {
+    case 0x00:
+      return;
+    case 0x0A:
+      nl_cursor();
+      __attribute__((fallthrough));
+    case 0x0D:
+      cursorx = 0;
+      break;
+    default:
+      print_bitmap(font[(uint8_t)s[i]], calculate_x(), calculate_y(), skew);
+
+      advance_cursor();
+    }
+    i++;
+  }
+}
+
 void k_puti(uint32_t n) {
   uint32_t div = 1;
   uint32_t digit_count = 1;
@@ -240,7 +265,7 @@ void k_puti(uint32_t n) {
     if (digit > 57 || digit < 48)
       char_bitmap = font[0]; // Missing char
 
-    print_bitmap(char_bitmap, calculate_x(), calculate_y());
+    print_bitmap(char_bitmap, calculate_x(), calculate_y(), 0);
 
     advance_cursor();
 
@@ -278,27 +303,15 @@ void kmain(void) {
 
   calculate_screen_constants();
 
-  k_puts("cursorx_max: ");
-  k_puti(cursorx_max);
+  set_text_colour(0xe6a6a1);
+  k_puts_ital("adaOS, ", 1);
+  k_puts_ital(version_string, 1);
+  set_text_colour(0xffffff);
   crlf();
-  k_puts("cursory_max: ");
-  k_puti(cursory_max);
+  k_puts("Copyright (C) 2025 Isabelle M. S.");
   crlf();
-  k_puts("bytes_per_line: ");
-  k_puti(bytes_per_line);
-  crlf();
-  k_puts("bytes_per_screen: ");
-  k_puti(bytes_per_screen);
-  crlf();
-  k_puts("height: ");
-  k_puti(height);
-  crlf();
-  k_puts("width: ");
-  k_puti(width);
-  crlf();
-  k_puts("pitch: ");
-  k_puti(pitch);
-  crlf();
+
+  k_debug("try load GDT");
 
   hcf();
 }

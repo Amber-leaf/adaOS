@@ -1,5 +1,5 @@
-#ifndef FOO_H_   /* Include guard */
-#define FOO_H_
+#ifndef CORE_H_   /* Include guard */
+#define CORE_H_
 #include <stdint.h>
 void k_putc(uint8_t c);
 void k_puts(const char *s);

@@ -34,7 +34,6 @@
 
 #include <stdarg.h>
 #include <stddef.h>
-//#include "core.h"
 
 
 #ifdef __cplusplus

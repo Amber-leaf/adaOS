@@ -1,7 +1,12 @@
-#ifndef FOO_H_   /* Include guard */
-#define FOO_H_
+#ifndef LOG_H_   /* Include guard */
+#define LOG_H_
 #include <stdint.h>
 
-void debug(char* msg);
+void k_debug(char *format, ...);
+void k_log(char *format, ...);
+void k_ok(char *format, ...);
+void k_err(char *format, ...);
+
+
 
 #endif
