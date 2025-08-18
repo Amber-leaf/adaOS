@@ -1,7 +1,7 @@
 #ifndef CORE_H_   /* Include guard */
 #define CORE_H_
 #include <stdint.h>
-void k_putc(uint8_t c);
+void k_putc(uint16_t c);
 void k_puts(const char *s);
 void k_puti(uint32_t n);
 void crlf(void);

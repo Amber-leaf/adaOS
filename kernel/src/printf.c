@@ -129,7 +129,7 @@ typedef struct {
   void *arg;
 } out_fct_wrap_type;
 
-void _putchar(char c) { k_putc(c); }
+void _putchar(char c) { k_putc((char)c); }
 
 // internal buffer output
 static inline void _out_buffer(char character, void *buffer, size_t idx,

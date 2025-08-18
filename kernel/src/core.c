@@ -1,4 +1,5 @@
 #include "core.h"
+#include "cpuinfo.h"
 #include "log.h"
 #include "printf.h"
 
@@ -100,9 +101,10 @@ static char *version_string = "v0.0.1";
 
 static uint32_t cursorx = 0;
 static uint32_t cursory = 0;
-static uint8_t font_size = 2;
 static uint32_t on_colour = 0xffffff;
 static uint32_t off_colour = 0x000000;
+static uint8_t font_size = 2;
+static uint8_t skew = 0;
 
 static uint32_t cursorx_max;
 static uint32_t cursory_max;
@@ -121,6 +123,8 @@ static void hcf(void) {
     asm("hlt");
   }
 }
+
+// === Printing / Frambuffer ===
 
 static struct limine_framebuffer *get_framebuffer(void) {
   // Ensure we got a framebuffer.
@@ -167,7 +171,7 @@ void advance_cursor(void) {
   }
 }
 
-void print_bitmap(uint64_t bitmap, uint32_t x, uint32_t y, uint8_t skew) {
+void print_bitmap(uint64_t bitmap, uint32_t x, uint32_t y) {
   for (int i = 0; i < 8; ++i) {
     uint8_t row = (bitmap >> ((7 - i) * 8)) & 0xFF;
 
@@ -189,6 +193,8 @@ void set_text_colour(uint32_t colour) { on_colour = colour; }
 
 void set_text_bg_colour(uint32_t colour) { off_colour = colour; }
 
+void set_skew(uint8_t n) { skew = n; }
+
 void clear(void) {
   memset(fb_ptr, 0x00, bytes_per_screen);
 
@@ -199,12 +205,12 @@ uint32_t calculate_y(void) { return cursory * 8 * font_size; }
 
 uint32_t calculate_x(void) { return cursorx * 8 * font_size; }
 
-void k_putc(uint8_t c) {
+void k_putc(uint16_t c) {
   uint64_t char_bitmap = font[c];
-  if (c > 127)
-    char_bitmap = font[0]; // Missing char
+  if (c > sizeof(font) / (sizeof(font[0]) / 2))
+    char_bitmap = font[1]; // Missing char
 
-  print_bitmap(char_bitmap, calculate_x(), calculate_y(), 0);
+  print_bitmap(char_bitmap, calculate_x(), calculate_y());
 
   advance_cursor();
 }
@@ -229,28 +235,6 @@ void k_puts(const char *s) {
   }
 }
 
-void k_puts_ital(const char *s, uint8_t skew) {
-  uint8_t i = 0;
-
-  for (;;) {
-    switch (s[i]) {
-    case 0x00:
-      return;
-    case 0x0A:
-      nl_cursor();
-      __attribute__((fallthrough));
-    case 0x0D:
-      cursorx = 0;
-      break;
-    default:
-      print_bitmap(font[(uint8_t)s[i]], calculate_x(), calculate_y(), skew);
-
-      advance_cursor();
-    }
-    i++;
-  }
-}
-
 void k_puti(uint32_t n) {
   uint32_t div = 1;
   uint32_t digit_count = 1;
@@ -265,7 +249,7 @@ void k_puti(uint32_t n) {
     if (digit > 57 || digit < 48)
       char_bitmap = font[0]; // Missing char
 
-    print_bitmap(char_bitmap, calculate_x(), calculate_y(), 0);
+    print_bitmap(char_bitmap, calculate_x(), calculate_y());
 
     advance_cursor();
 
@@ -278,7 +262,6 @@ void k_puti(uint32_t n) {
 void crlf(void) { k_puts("\r\n"); }
 
 void scroll(uint8_t lines) {
-#if 1
   uint32_t *ptr = fb_ptr;
 
   for (int n = 0; n < lines; n++) {
@@ -292,8 +275,27 @@ void scroll(uint8_t lines) {
 
     ptr = fb_ptr;
   }
-#endif
 }
+
+void print_banner(void) {
+  set_text_colour(0xe6a6a1);
+  set_skew(1);
+  k_putc(205);
+  printf("adaOS, %s", version_string);
+  k_putc(205);
+  set_skew(0);
+
+  set_text_colour(0xffffff);
+  crlf();
+  k_puts("Copyright (C) 2025 Isabelle M. S.");
+  crlf();
+}
+
+// === Entering Long Mode ===
+extern uint8_t checkCPUID(void);
+extern uint8_t queryLongMode(void);
+extern void setPaging(void);
+extern void setCompatibility(void);
 
 void kmain(void) {
   // Ensure the bootloader actually understands our base revision (see spec).
@@ -302,16 +304,22 @@ void kmain(void) {
   }
 
   calculate_screen_constants();
+  print_banner();
 
-  set_text_colour(0xe6a6a1);
-  k_puts_ital("adaOS, ", 1);
-  k_puts_ital(version_string, 1);
-  set_text_colour(0xffffff);
-  crlf();
-  k_puts("Copyright (C) 2025 Isabelle M. S.");
-  crlf();
+  if (checkCPUID() == 0) {
+    k_err("CPUID not supported!");
+    hcf();
+  }
 
-  k_debug("try load GDT");
+  if (queryLongMode() == 0) {
+    k_err("long mode not supported!");
+    hcf();
+  }
+
+  setPaging();
+  setCompatibility();
+
+  k_ok("in 32-bit compatibility mode");
 
   hcf();
 }

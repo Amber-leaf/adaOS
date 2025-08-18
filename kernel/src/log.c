@@ -5,6 +5,7 @@
 #define LOG
 #define OK
 #define ERR
+#define WRN
 
 void k_debug(char *format, ...) {
 #ifdef DEBUG
@@ -38,8 +39,28 @@ void k_ok(char *format, ...) {
   va_list va;
   va_start(va, format);
 
+  k_puts("[");
   set_text_colour(0x66ff66);
-  k_puts("[OK] ");
+  k_puts("OK");
+  set_text_colour(0xffffff);
+  k_puts("] ");
+
+  vprintf(format, va);
+  va_end(va);
+  crlf();
+#endif
+}
+
+void k_wrn(char *format, ...) {
+#ifdef WRN
+  va_list va;
+  va_start(va, format);
+
+  k_puts("[");
+  set_text_colour(0xffff66);
+  k_puts("WRN");
+  set_text_colour(0xffffff);
+  k_puts("] ");
   vprintf(format, va);
   va_end(va);
   crlf();
@@ -51,8 +72,11 @@ void k_err(char *format, ...) {
   va_list va;
   va_start(va, format);
 
+  k_puts("[");
   set_text_colour(0xff6666);
-  k_puts("[ERROR] ");
+  k_puts("ERR");
+  set_text_colour(0xffffff);
+  k_puts("] ");
   vprintf(format, va);
   va_end(va);
   crlf();

@@ -5,8 +5,7 @@
 void k_debug(char *format, ...);
 void k_log(char *format, ...);
 void k_ok(char *format, ...);
+void k_wrn(char *format, ...);
 void k_err(char *format, ...);
-
-
 
 #endif
