@@ -1,5 +1,4 @@
 #include "core.h"
-#include "cpuinfo.h"
 #include "log.h"
 #include "printf.h"
 
@@ -289,13 +288,14 @@ void print_banner(void) {
   crlf();
   k_puts("Copyright (C) 2025 Isabelle M. S.");
   crlf();
+  crlf();
 }
 
 // === Entering Long Mode ===
-extern uint8_t checkCPUID(void); // From bootstap_longmode.asm
-extern uint8_t queryLongMode(void); // From bootstap_longmode.asm
-extern void setPaging(void); // From bootstap_longmode.asm
-extern void setCompatibility(void); // From bootstap_longmode.asm
+// extern uint8_t checkCPUID(void); // From bootstap_longmode.asm
+// extern uint8_t queryLongMode(void); // From bootstap_longmode.asm
+// extern void setPaging(void); // From bootstap_longmode.asm
+// extern void setCompatibility(void); // From bootstap_longmode.asm
 
 void kmain(void) {
   // Ensure the bootloader actually understands our base revision (see spec).
@@ -306,20 +306,22 @@ void kmain(void) {
   calculate_screen_constants();
   print_banner();
 
-  if (checkCPUID() == 0) {
-    k_err("CPUID not supported!");
-    hcf();
-  }
-
-  if (queryLongMode() == 0) {
-    k_err("long mode not supported!");
-    hcf();
-  }
-
-  setPaging();
-  setCompatibility();
-
-  k_ok("in 32-bit compatibility mode");
-
+  
+  //
+  // if (checkCPUID() == 0) {
+  //  k_err("CPUID not supported!");
+  //  hcf();
+  //}
+  //
+  // if (queryLongMode() == 0) {
+  //  k_err("long mode not supported!");
+  //  hcf();
+  //}
+  //
+  // setPaging();
+  // setCompatibility();
+  //
+  // k_ok("in 32-bit compatibility mode");
+  //
   hcf();
 }
