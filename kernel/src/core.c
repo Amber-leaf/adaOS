@@ -292,10 +292,8 @@ void print_banner(void) {
 }
 
 // === Entering Long Mode ===
-extern uint8_t check_CPUID(void);     // From bootstap_longmode.asm
-extern uint8_t query_long_mode(void); // From bootstap_longmode.asm
-extern void set_paging(void);         // From bootstap_longmode.asm
-extern void set_compatibility(void);  // From bootstap_longmode.asm
+extern uint8_t check_CPUID(void);     // From check_cpuid.asm
+extern uint8_t query_long_mode(void); // From check_cpuid.asm
 
 void kmain(void) {
   // Ensure the bootloader actually understands our base revision (see spec).
@@ -316,10 +314,7 @@ void kmain(void) {
     hcf();
   }
 
-  set_paging();
-  set_compatibility();
-
-  k_ok("in 32-bit compatibility mode");
+  k_ok("in long mode");
 
   hcf();
 }
