@@ -1,5 +1,6 @@
 #include "core.h"
 #include "log.h"
+#include "paging_bootstrap.h"
 #include "printf.h"
 
 #include <limine.h>
@@ -117,7 +118,7 @@ static uint32_t *fb_ptr;
 extern uint64_t font[128]; // From font.c
 
 // Halt and catch fire function.
-static void hcf(void) {
+void hcf(void) {
   for (;;) {
     asm("hlt");
   }
@@ -315,6 +316,10 @@ void kmain(void) {
   }
 
   k_ok("in long mode");
+
+  setup_paging();
+
+  k_ok("setup kernel's paging");
 
   hcf();
 }
