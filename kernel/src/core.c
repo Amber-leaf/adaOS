@@ -292,10 +292,10 @@ void print_banner(void) {
 }
 
 // === Entering Long Mode ===
-// extern uint8_t checkCPUID(void); // From bootstap_longmode.asm
-// extern uint8_t queryLongMode(void); // From bootstap_longmode.asm
-// extern void setPaging(void); // From bootstap_longmode.asm
-// extern void setCompatibility(void); // From bootstap_longmode.asm
+extern uint8_t check_CPUID(void);     // From bootstap_longmode.asm
+extern uint8_t query_long_mode(void); // From bootstap_longmode.asm
+extern void set_paging(void);         // From bootstap_longmode.asm
+extern void set_compatibility(void);  // From bootstap_longmode.asm
 
 void kmain(void) {
   // Ensure the bootloader actually understands our base revision (see spec).
@@ -306,22 +306,20 @@ void kmain(void) {
   calculate_screen_constants();
   print_banner();
 
-  
-  //
-  // if (checkCPUID() == 0) {
-  //  k_err("CPUID not supported!");
-  //  hcf();
-  //}
-  //
-  // if (queryLongMode() == 0) {
-  //  k_err("long mode not supported!");
-  //  hcf();
-  //}
-  //
-  // setPaging();
-  // setCompatibility();
-  //
-  // k_ok("in 32-bit compatibility mode");
-  //
+  if (!check_CPUID()) {
+    k_err("CPUID not supported!");
+    hcf();
+  }
+
+  if (!query_long_mode()) {
+    k_err("long mode not supported!");
+    hcf();
+  }
+
+  set_paging();
+  set_compatibility();
+
+  k_ok("in 32-bit compatibility mode");
+
   hcf();
 }
