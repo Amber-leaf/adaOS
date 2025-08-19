@@ -115,7 +115,7 @@ static uint32_t width;
 static uint32_t pitch;
 static uint32_t *fb_ptr;
 
-extern uint64_t font[128];
+extern uint64_t font[128]; // From font.c
 
 // Halt and catch fire function.
 static void hcf(void) {
@@ -292,10 +292,10 @@ void print_banner(void) {
 }
 
 // === Entering Long Mode ===
-extern uint8_t checkCPUID(void);
-extern uint8_t queryLongMode(void);
-extern void setPaging(void);
-extern void setCompatibility(void);
+extern uint8_t checkCPUID(void); // From bootstap_longmode.asm
+extern uint8_t queryLongMode(void); // From bootstap_longmode.asm
+extern void setPaging(void); // From bootstap_longmode.asm
+extern void setCompatibility(void); // From bootstap_longmode.asm
 
 void kmain(void) {
   // Ensure the bootloader actually understands our base revision (see spec).
