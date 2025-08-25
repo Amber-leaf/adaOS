@@ -47,4 +47,6 @@ clone_repo_commit \
 
 set +x
 
+sudo pacman -S nasm clang qemu-full xorriso --needed
+
 printf "\nDependencies obtained successfully!\n"
