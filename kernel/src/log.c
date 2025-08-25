@@ -1,5 +1,5 @@
-#include "core.h"
-#include "printf.h"
+#include "headers/core.h"
+#include "headers/printf.h"
 
 #define DEBUG
 #define LOG

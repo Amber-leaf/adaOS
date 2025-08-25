@@ -34,8 +34,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "core.h"
-#include "printf.h"
+#include "headers/core.h"
+#include "headers/printf.h"
 
 // define this globally (e.g. gcc -DPRINTF_INCLUDE_CONFIG_H ...) to include the
 // printf_config.h header file

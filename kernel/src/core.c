@@ -1,6 +1,6 @@
-#include "core.h"
-#include "log.h"
-#include "printf.h"
+#include "headers/core.h"
+#include "headers/log.h"
+#include "headers/printf.h"
 
 #include <limine.h>
 #include <stdbool.h>
