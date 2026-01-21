@@ -246,7 +246,7 @@ void k_puti(uint32_t n) {
 
     uint64_t char_bitmap = font[digit];
     if (digit > 57 || digit < 48)
-      char_bitmap = font[0]; // Missing char
+      char_bitmap = font[1]; // Missing char
 
     print_bitmap(char_bitmap, calculate_x(), calculate_y());
 
@@ -280,13 +280,13 @@ void print_banner(void) {
   set_text_colour(0xe6a6a1);
   set_skew(1);
   k_putc(205);
-  printf("adaOS, %s", version_string);
+  printf("Welcome to adaOS, %s", version_string);
   k_putc(205);
   set_skew(0);
 
   set_text_colour(0xffffff);
   crlf();
-  k_puts("Copyright (C) 2025 Isabelle M. S.");
+  k_puts("Copyright (C) 2025-2026 Isabelle M. S.");
   crlf();
   crlf();
 }
