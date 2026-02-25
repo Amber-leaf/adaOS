@@ -93,7 +93,7 @@ int memcmp(const void *s1, const void *s2, size_t n) {
 
 // ---------- Kernel Start + Core Functions ----------
 
-static char *version_string = "v0.0.1";
+static char *version_string = "0.0.1";
 
 // Halt and catch fire function.
 void hcf(void) {
@@ -101,8 +101,6 @@ void hcf(void) {
     asm("hlt");
   }
 }
-
-// === Printing / Framebuffer ===
 
 static struct limine_framebuffer *get_framebuffer(void) {
   // Ensure we got a framebuffer.
@@ -118,7 +116,7 @@ void print_banner(void) {
   set_text_colour(0xe6a6a1);
   set_skew(1);
   k_putc(205);
-  printf("Welcome to adaOS, %s", version_string);
+  printf("Welcome to adaOS, version %s", version_string);
   k_putc(205);
   set_skew(0);
 
@@ -130,6 +128,7 @@ void print_banner(void) {
   crlf();
 }
 
+// Main boot entrypoint.
 void kmain(void) {
   // Ensure the bootloader actually understands our base revision (see spec).
   if (LIMINE_BASE_REVISION_SUPPORTED == false) {
