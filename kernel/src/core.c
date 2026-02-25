@@ -93,7 +93,7 @@ int memcmp(const void *s1, const void *s2, size_t n) {
 
 // ---------- Kernel Start + Core Functions ----------
 
-static char *version_string = "0.0.1";
+static char *version_string = "0.0.2";
 
 // Halt and catch fire function.
 void hcf(void) {
@@ -122,7 +122,9 @@ void print_banner(void) {
 
   set_text_colour(0xffffff);
   crlf();
-  k_puts("Copyright (C) 2026 Ambersoft Technologies");
+  printf("Copyright (C) 2026 Ambersoft Technologies");
+  crlf();
+  printf_("See LICENCE in the source directory for details. (TL;DL, BSD 3)");
 
   crlf();
   crlf();
