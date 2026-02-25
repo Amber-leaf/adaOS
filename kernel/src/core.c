@@ -170,7 +170,5 @@ void kmain(void) {
 
   k_ok("APCI Enabled");
 
-  __asm__ __volatile__("int $0xf6");
-
   hcf();
 }
