@@ -1,4 +1,4 @@
-#include "../header/core.h"
+#include "header/print_lowlevel.h"
 #include "header/printf.h"
 
 #define DEBUG
