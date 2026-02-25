@@ -3,7 +3,7 @@
 #include "header/interupt_defines.h"
 #include "header/ist.h"
 
-char* dump_registers(struct cpu_status *context) {
+char *dump_registers(struct cpu_status *context) {
   // todo
   return "TODO";
 }
