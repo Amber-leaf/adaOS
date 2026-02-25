@@ -278,7 +278,7 @@ void print_banner(void) {
   set_text_colour(0xe6a6a1);
   set_skew(1);
   k_putc(205);
-  printf("adaOS, %s", version_string);
+  printf("Welcome to adaOS, %s", version_string);
   k_putc(205);
   set_skew(0);
 
