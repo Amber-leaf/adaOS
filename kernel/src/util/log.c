@@ -13,7 +13,7 @@ void k_debug(char *format, ...) {
   va_start(va, format);
 
   set_text_colour(0x888888);
-  k_puts("[DEBUG] ");
+  k_puts("[DEBUG] Kernel: ");
   vprintf(format, va);
   va_end(va);
   set_text_colour(0xffffff);
@@ -27,7 +27,7 @@ void k_log(char *format, ...) {
   va_start(va, format);
 
   set_text_colour(0xffffff);
-  k_puts("[LOG] ");
+  k_puts("[LOG] Kernel: ");
   vprintf(format, va);
   va_end(va);
   crlf();
@@ -43,7 +43,7 @@ void k_ok(char *format, ...) {
   set_text_colour(0x66ff66);
   k_puts("OK");
   set_text_colour(0xffffff);
-  k_puts("] ");
+  k_puts("] Kernel: ");
 
   vprintf(format, va);
   va_end(va);
@@ -60,7 +60,7 @@ void k_wrn(char *format, ...) {
   set_text_colour(0xffff66);
   k_puts("WRN");
   set_text_colour(0xffffff);
-  k_puts("] ");
+  k_puts("] Kernel: ");
   vprintf(format, va);
   va_end(va);
   crlf();
@@ -76,7 +76,7 @@ void k_err(char *format, ...) {
   set_text_colour(0xff6666);
   k_puts("ERR");
   set_text_colour(0xffffff);
-  k_puts("] ");
+  k_puts("] Kernel: ");
   vprintf(format, va);
   va_end(va);
   crlf();

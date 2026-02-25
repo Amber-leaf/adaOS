@@ -1,6 +1,7 @@
 #include "header/core.h"
 #include "driver/x86_64/header/cpuid.h"
 #include "driver/x86_64/header/gdt.h"
+#include "driver/x86_64/header/idt.h"
 #include "header/limine.h"
 #include "util/header/log.h"
 #include "util/header/print_lowlevel.h"
@@ -154,6 +155,12 @@ void kmain(void) {
   make_gdt();
 
   k_ok("GDT Init");
+
+  make_idt();
+
+  k_ok("IDT Init");
+
+  __asm__ volatile("int $0x10");
 
   hcf();
 }

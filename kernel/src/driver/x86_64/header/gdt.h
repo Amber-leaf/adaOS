@@ -36,7 +36,7 @@ struct __attribute__ ((packed)) TSS {
     uint16_t reserved3, io_map_base;
 };
 
-extern void lgdt(struct GDTDesc* gdtr);
+extern void lgdt(struct GDTDesc* gdtd);
 extern void ltr(uint16_t ltr);
 extern void reload_segments();
 extern void make_gdt();
