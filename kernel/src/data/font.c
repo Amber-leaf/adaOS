@@ -1,7 +1,7 @@
 #include <stdint.h>
 
 uint64_t font[256] = {
-    0x0000000000000000, 0x7e81a581bd99817e, 0x7effdbffc3e7ff7e,
+    0x007e464a52627e00, 0x7e81a581bd99817e, 0x7effdbffc3e7ff7e,
     0x6cfefefe7c381000, 0x10387cfe7c381000, 0x387c38fefed61038,
     0x10387cfefe7c1038, 0x0000183c3c180000, 0xffffe7c3c3e7ffff,
     0x003c664242663c00, 0xffc399bdbd99c3ff, 0x0f070f7dcccccc78,

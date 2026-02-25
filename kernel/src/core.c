@@ -1,11 +1,15 @@
-#include "headers/core.h"
-#include "headers/log.h"
-#include "headers/printf.h"
+#include "header/core.h"
+#include "driver/x86_64/header/cpuid.h"
+#include "driver/x86_64/header/gdt.h"
+#include "header/limine.h"
+#include "util/header/log.h"
+#include "util/header/printf.h"
 
-#include <limine.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+
+#define MISSING font[0]
 
 // Set the base revision to 3, this is recommended as this is the latest
 // base revision described by the Limine boot protocol specification.
@@ -36,12 +40,6 @@ __attribute__((
     used,
     section(
         ".limine_requests_end"))) static volatile LIMINE_REQUESTS_END_MARKER;
-
-// GCC and Clang reserve the right to generate calls to the following
-// 4 functions even if they are not directly called.
-// Implement them as the C specification mandates.
-// DO NOT remove or rename these functions, or stuff will eventually break!
-// They CAN be moved to a different .c file.
 
 void *memcpy(void *restrict dest, const void *restrict src, size_t n) {
   uint8_t *restrict pdest = (uint8_t *restrict)dest;
@@ -123,7 +121,7 @@ void hcf(void) {
   }
 }
 
-// === Printing / Frambuffer ===
+// === Printing / Framebuffer ===
 
 static struct limine_framebuffer *get_framebuffer(void) {
   // Ensure we got a framebuffer.
@@ -144,8 +142,8 @@ void calculate_screen_constants(void) {
   cursorx_max = width / (8 * font_size) - 1;
   cursory_max = height / (8 * font_size) - 1;
 
-  bytes_per_line = width * (8 * font_size);
-  bytes_per_screen = bytes_per_line * cursory_max;
+  bytes_per_line = width * (8 * font_size) * 4;
+  bytes_per_screen = bytes_per_line * (cursory_max + 1);
 
   pitch = fb->pitch / 4;
 
@@ -207,7 +205,7 @@ uint32_t calculate_x(void) { return cursorx * 8 * font_size; }
 void k_putc(uint16_t c) {
   uint64_t char_bitmap = font[c];
   if (c > sizeof(font) / (sizeof(font[0]) / 2))
-    char_bitmap = font[1]; // Missing char
+    char_bitmap = MISSING;
 
   print_bitmap(char_bitmap, calculate_x(), calculate_y());
 
@@ -246,7 +244,7 @@ void k_puti(uint32_t n) {
 
     uint64_t char_bitmap = font[digit];
     if (digit > 57 || digit < 48)
-      char_bitmap = font[0]; // Missing char
+      char_bitmap = MISSING; // Missing char
 
     print_bitmap(char_bitmap, calculate_x(), calculate_y());
 
@@ -286,14 +284,11 @@ void print_banner(void) {
 
   set_text_colour(0xffffff);
   crlf();
-  k_puts("Copyright (C) 2025 Isabelle M. S.");
+  k_puts("Copyright (C) 2026 Ambersoft Technologies");
+
   crlf();
   crlf();
 }
-
-// === Entering Long Mode ===
-extern uint8_t check_CPUID(void);     // From check_cpuid.asm
-extern uint8_t query_long_mode(void); // From check_cpuid.asm
 
 void kmain(void) {
   // Ensure the bootloader actually understands our base revision (see spec).
@@ -309,16 +304,16 @@ void kmain(void) {
     hcf();
   }
 
-  if (!query_long_mode()) {
+  if (!check_long_mode()) {
     k_err("long mode not supported!");
     hcf();
   }
 
-  k_ok("in long mode");
+  k_ok("In long mode");
 
-  setup_paging();
+  make_gdt();
 
-  k_ok("setup kernel's paging");
+  k_ok("GDT Init");
 
   hcf();
 }

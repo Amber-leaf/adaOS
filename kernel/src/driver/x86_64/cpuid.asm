@@ -1,7 +1,7 @@
 bits 32
 
 global check_CPUID
-global query_long_mode
+global check_long_mode
 
 EFLAGS_ID          equ (1 << 21)
 CPUID_EXTENSIONS   equ 0x80000000
@@ -25,7 +25,7 @@ check_CPUID:
     movzx eax, al
     ret
 
-query_long_mode:
+check_long_mode:
     mov eax, CPUID_EXTENSIONS
     cpuid
     cmp eax, CPUID_EXT_FEATURES
