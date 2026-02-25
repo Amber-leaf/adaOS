@@ -41,7 +41,7 @@ void k_ok(char *format, ...) {
 
   k_puts("[");
   set_text_colour(0x66ff66);
-  k_puts("OK");
+  k_puts("OK~");
   set_text_colour(0xffffff);
   k_puts("] Kernel: ");
 

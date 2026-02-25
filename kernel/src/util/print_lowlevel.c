@@ -1,5 +1,6 @@
 #include "../header/core.h"
 #include "../header/limine.h"
+#include <stdbool.h>
 #include <stdint.h>
 
 #define MISSING font[0]
@@ -106,13 +107,28 @@ uint32_t calculate_y(void) { return cursory * 8 * font_size; }
 uint32_t calculate_x(void) { return cursorx * 8 * font_size; }
 
 void k_putc(uint16_t c) {
-  uint64_t char_bitmap = font[c];
-  if (c > sizeof(font) / (sizeof(font[0]) / 2))
-    char_bitmap = MISSING;
+  bool should_print = true;
 
-  print_bitmap(char_bitmap, calculate_x(), calculate_y());
+  switch (c) {
 
-  advance_cursor();
+  case 0x0A:
+    nl_cursor();
+    __attribute__((fallthrough));
+  case 0x0D:
+    cursorx = 0;
+    should_print = false;
+    break;
+  }
+
+  if (should_print) {
+    uint64_t char_bitmap = font[c];
+    if (c > sizeof(font) / (sizeof(font[0]) / 2))
+      char_bitmap = MISSING;
+
+    print_bitmap(char_bitmap, calculate_x(), calculate_y());
+
+    advance_cursor();
+  }
 }
 
 void k_puts(const char *s) {

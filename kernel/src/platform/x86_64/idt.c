@@ -1,12 +1,12 @@
 #include "header/idt.h"
 
 #define GDT_OFFSET_KERNEL_CODE 0x8
-#define IDT_VECTORS 32
+#define IDT_VECTORS 255
 
 extern void *isr_stub_table[];
 
 __attribute__((aligned(0x10))) static struct IDTEntry
-    idt[256]; // Create an array of IDT entries; aligned for performance
+    idt[IDT_VECTORS]; // Create an array of IDT entries; aligned for performance
 
 static struct IDTDesc idtd;
 
@@ -26,7 +26,7 @@ void make_idt(void) {
   idtd.base = (uintptr_t)&idt[0];
   idtd.bounds = (uint16_t)sizeof(struct IDTDesc) * IDT_VECTORS - 1;
 
-  for (uint8_t vector = 0; vector < 32; vector++) {
+  for (uint8_t vector = 0; vector < IDT_VECTORS; vector++) {
     idt_set_descriptor(vector, isr_stub_table[vector], 0x8E);
     // vectors[vector] = true;
   }

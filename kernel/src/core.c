@@ -1,8 +1,10 @@
 #include "header/core.h"
 #include "header/limine.h"
+#include "platform/x86_64/header/apic.h"
 #include "platform/x86_64/header/cpuid.h"
 #include "platform/x86_64/header/gdt.h"
 #include "platform/x86_64/header/idt.h"
+#include "platform/x86_64/header/pic.h"
 #include "util/header/log.h"
 #include "util/header/print_lowlevel.h"
 #include "util/header/printf.h"
@@ -160,7 +162,15 @@ void kmain(void) {
 
   k_ok("IDT Init");
 
-  __asm__ volatile("int $0x10");
+  setup_pic();
+
+  k_ok("Disabled PIC");
+
+  setup_apic();
+
+  k_ok("APCI Enabled");
+
+  __asm__ __volatile__("int $0xf6");
 
   hcf();
 }

@@ -59,7 +59,7 @@ exception_handler_asm:
 
 isr_stub_table:
 %assign i 0 
-%rep    32 
+%rep    32
     dq isr%+i
 %assign i i+1 
 %endrep
@@ -96,3 +96,17 @@ isr_no_err_stub 28
 isr_no_err_stub 29
 isr_err_stub    30
 isr_no_err_stub 31
+
+isr_no_err_stub 0xf0 ; apic spurious vector handler
+
+isr_no_err_stub 0xf1 ; apic timer handler
+isr_no_err_stub 0xf2 ; apic thermal handler
+isr_no_err_stub 0xf3 ; apic performance counter handler
+isr_no_err_stub 0xf4 ; apic lint0 handler
+isr_no_err_stub 0xf5 ; apic lint1 handler
+isr_err_stub 0xf6    ; apic error handler
+
+
+
+
+
