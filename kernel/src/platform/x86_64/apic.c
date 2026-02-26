@@ -73,5 +73,5 @@ void send_eio() {
   uint64_t *apic_ptr = &apic.apic_address;
   uint64_t *eoi_ptr = apic_ptr + 0xB0;
 
-  eoi_ptr[0] = 1;
+  eoi_ptr[0] = 0;
 }
