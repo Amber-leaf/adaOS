@@ -168,9 +168,7 @@ void kmain(void) {
 
   setup_apic();
 
-  k_ok("APIC Enabled");
-
-  __asm__ __volatile__("int $0x10");
+  k_ok("APIC Setup");
 
   hcf();
 }

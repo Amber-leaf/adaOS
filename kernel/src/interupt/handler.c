@@ -7,6 +7,8 @@
 #include "header/ist.h"
 
 void print_cpu_status(struct cpu_status *context) {
+  printf("Vector: %llu  Error Code: %016llx\n---\n", context->vector_number,
+         context->error_code);
   printf("RAX: %016llx  RBX: %016llx\n", context->rax, context->rbx);
   printf("RCX: %016llx  RDX: %016llx\n", context->rcx, context->rdx);
   printf("RSI: %016llx  RDI: %016llx\n", context->rsi, context->rdi);
@@ -15,44 +17,25 @@ void print_cpu_status(struct cpu_status *context) {
   printf("R10: %016llx  R11: %016llx\n", context->r10, context->r11);
   printf("R12: %016llx  R13: %016llx\n", context->r12, context->r13);
   printf("R14: %016llx  R15: %016llx\n", context->r14, context->r15);
-  printf("Vector: %llu  Error Code: %016llx\n", context->vector_number,
-         context->error_code);
+
   printf("RIP: %016llx  CS:  %016llx\n", context->iret_rip, context->iret_cs);
   printf("RSP: %016llx  SS:  %016llx\n", context->iret_rsp, context->iret_ss);
   printf("RFLAGS: %016llx\n", context->iret_flags);
 }
 
-void non_fatal_unimplemented_exception(struct cpu_status *context) {
-  k_log("Hit unimplemented ISR 0x%x (%d)", context->vector_number,
+void unimplemented_fault(char *msg, struct cpu_status *context) {
+  k_log("Hit fault: '%s (%d, 0x%x)'", msg, context->vector_number,
         context->vector_number);
-
-  // print_cpu_status(context);
 }
 
-void non_fatal_unimplemented_exception_msg(struct cpu_status *context,
-                                           char *msg) {
-  k_log("Hit unimplemented ISR %s 0x%x (%d)", msg, context->vector_number,
+void unimplemented_trap(char *msg, struct cpu_status *context) {
+  k_log("Hit trap: '%s (%d, 0x%x)'", msg, context->vector_number,
         context->vector_number);
-
-  // print_cpu_status(context);
 }
 
-void unimplemented_exception(struct cpu_status *context) {
-  k_log("Hit fatal unimplemented ISR 0x%x (%d)", context->vector_number,
-        context->vector_number);
-
+void unimplemented_abort(char *msg, struct cpu_status *context) {
   print_cpu_status(context);
-
-  panic();
-}
-
-void unimplemented_exception_msg(struct cpu_status *context, char *msg) {
-  k_log("Hit fatal unimplemented ISR %s 0x%x (%d)", msg, context->vector_number,
-        context->vector_number);
-
-  print_cpu_status(context);
-
-  panic();
+  panic(msg);
 }
 
 // todo make these msg variants.
@@ -60,91 +43,94 @@ void exception_handler(struct cpu_status *context) {
   send_eio();
 
   switch (context->vector_number) {
-  case 0:
-    unimplemented_exception(context);
-    break; // #DE Divide By Zero Error
-  case 1:
-    unimplemented_exception(context);
-    break; // #DB Debug
-  case 2:
-    unimplemented_exception(context);
-    break; // #NMI Non-Maskable Interrupt
-  case 3:
-    unimplemented_exception(context);
-    break; // #BP Breakpoint
-  case 4:
-    non_fatal_unimplemented_exception(context);
-    break; // #OF Overflow
-  case 5:
-    unimplemented_exception(context);
-    break; // #BR Bound Range Exceeded
-  case 6:
-    unimplemented_exception(context);
-    break; // #UD Invalid Opcode
-  case 7:
-    non_fatal_unimplemented_exception(context);
-    break; // #NM Device Not Available
-  case 8:
-    unimplemented_exception(context);
-    break; // #DF Double Fault
-  case 9:
-    non_fatal_unimplemented_exception(context);
-    break; // Unused (was x87 Segment Overrun)
-  case 10:
-    unimplemented_exception(context);
-    break; // #TS Invalid TSS (has error code)
-  case 11:
-    unimplemented_exception(context);
-    break; // #NP Segment Not Present (has error code)
-  case 12:
-    unimplemented_exception(context);
-    break; // #SS Stack-Segment Fault (has error code)
-  case 13:
-    unimplemented_exception(context);
-    break; // #GP General Protection (has error code)
-  case 14:
-    non_fatal_unimplemented_exception(context);
-    break; // #PF Page Fault (has error code)
-  case 15:
-    non_fatal_unimplemented_exception(context);
-    break; // Currently Unused
-  case 16:
-    non_fatal_unimplemented_exception(context);
-    break; // #MF x87 FPU Error
-  case 17:
-    unimplemented_exception(context);
-    break; // #AC Alignment Check (error code: always 0)
-  case 18:
-    unimplemented_exception(context);
-    break; // #MC Machine Check
-  case 19:
-    unimplemented_exception(context);
-    break; // #XF SIMD (SSE/AVX) Error
-
-  case 0xf0:
-    non_fatal_unimplemented_exception_msg(context,
-                                          "apic spurious vector handler");
+  case 0x0: // #DE Division Error
+    unimplemented_fault("Division Error (#DE)", context);
     break;
-  case 0xf1:
-    non_fatal_unimplemented_exception_msg(context, "apic timer handler");
+  case 0x1: // #DB Debug
+    unimplemented_trap("Debug (#DB)", context);
     break;
-  case 0xf2:
-    non_fatal_unimplemented_exception_msg(context, "apic thermal handler");
+  case 0x2: // NMI Non-maskable Interrupt
+    unimplemented_fault("Non-maskable Interrupt", context);
     break;
-  case 0xf3:
-    non_fatal_unimplemented_exception_msg(context,
-                                          "apic performance counter handler");
+  case 0x3: // #BP Breakpoint
+    unimplemented_trap("Breakpoint (#BP)", context);
     break;
-  case 0xf4:
-  case 0xf5:
-    non_fatal_unimplemented_exception_msg(context, "apic lint handler");
+  case 0x4: // #OF Overflow
+    unimplemented_trap("Overflow (#OF)", context);
     break;
-  case 0xf6:
-    unimplemented_exception_msg(context, "apic internal error!");
-
-  // 20-31: Currently Unused
+  case 0x5: // #BR Bound Range Exceeded
+    unimplemented_fault("Bound Range Exceeded (#BR)", context);
+    break;
+  case 0x6: // #UD Invalid Opcode
+    unimplemented_fault("Invalid Opcode (#UD)", context);
+    break;
+  case 0x7: // #NM Device Not Available
+    unimplemented_fault("Device Not Available (#NM)", context);
+    break;
+  case 0x8: // #DF Double Fault
+    unimplemented_abort("Double Fault (#DF)", context);
+    break;
+  case 0x9: // Coprocessor Segment Overrun (deprecated)
+    unimplemented_fault("Coprocessor Segment Overrun", context);
+    break;
+  case 0xA: // #TS Invalid TSS
+    unimplemented_fault("Invalid TSS (#TS)", context);
+    break;
+  case 0xB: // #NP Segment Not Present
+    unimplemented_fault("Segment Not Present (#NP)", context);
+    break;
+  case 0xC: // #SS Stack-Segment Fault
+    unimplemented_fault("Stack-Segment Fault (#SS)", context);
+    break;
+  case 0xD: // #GP General Protection Fault
+    unimplemented_fault("General Protection Fault (#GP)", context);
+    break;
+  case 0xE: // #PF Page Fault
+    unimplemented_fault("Page Fault (#PF)", context);
+    break;
+  case 0xF: // Reserved
+    unimplemented_fault("Reserved (0xF)", context);
+    break;
+  case 0x10: // #MF x87 Floating-Point Exception
+    unimplemented_fault("x87 Floating-Point Exception (#MF)", context);
+    break;
+  case 0x11: // #AC Alignment Check
+    unimplemented_fault("Alignment Check (#AC)", context);
+    break;
+  case 0x12: // #MC Machine Check
+    unimplemented_abort("Machine Check (#MC)", context);
+    break;
+  case 0x13: // #XM/#XF SIMD Floating-Point Exception
+    unimplemented_fault("SIMD Floating-Point Exception (#XM/#XF)", context);
+    break;
+  case 0x14: // #VE Virtualization Exception
+    unimplemented_fault("Virtualization Exception (#VE)", context);
+    break;
+  case 0x15: // #CP Control Protection Exception
+    unimplemented_fault("Control Protection Exception (#CP)", context);
+    break;
+  case 0x16:
+  case 0x17:
+  case 0x18:
+  case 0x19:
+  case 0x1A:
+  case 0x1B: // Reserved 22-27
+    unimplemented_fault("Reserved", context);
+    break;
+  case 0x1C: // #HV Hypervisor Injection Exception
+    unimplemented_fault("Hypervisor Injection Exception (#HV)", context);
+    break;
+  case 0x1D: // #VC VMM Communication Exception
+    unimplemented_fault("VMM Communication Exception (#VC)", context);
+    break;
+  case 0x1E: // #SX Security Exception
+    unimplemented_fault("Security Exception (#SX)", context);
+    break;
+  case 0x1F: // Reserved
+    unimplemented_fault("Reserved", context);
+    break;
   default:
-    non_fatal_unimplemented_exception(context);
+    unimplemented_fault("Unknown Exception", context);
     break;
   }
 }

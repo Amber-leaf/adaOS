@@ -13,7 +13,7 @@ void k_debug(char *format, ...) {
   va_start(va, format);
 
   set_text_colour(0x888888);
-  k_puts("[DEBUG] Kernel: ");
+  k_puts("[DBG] Kernel: ");
   vprintf(format, va);
   va_end(va);
   set_text_colour(0xffffff);
