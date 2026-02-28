@@ -17,7 +17,6 @@ void print_cpu_status(struct cpu_status *context) {
   printf_("R10: %016llx  R11: %016llx\n", context->r10, context->r11);
   printf_("R12: %016llx  R13: %016llx\n", context->r12, context->r13);
   printf_("R14: %016llx  R15: %016llx\n", context->r14, context->r15);
-
   printf_("RIP: %016llx  CS:  %016llx\n", context->iret_rip, context->iret_cs);
   printf_("RSP: %016llx  SS:  %016llx\n", context->iret_rsp, context->iret_ss);
   printf_("RFLAGS: %016llx\n", context->iret_flags);
