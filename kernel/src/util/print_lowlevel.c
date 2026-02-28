@@ -39,18 +39,15 @@ void calculate_screen_constants(struct limine_framebuffer *fb) {
 }
 
 void scroll(uint8_t lines) {
-  uint32_t *ptr = fb_ptr;
-
   for (int n = 0; n < lines; n++) {
     for (uint32_t i = 0; i < cursory_max; i++) {
-      memcpy(ptr, ptr + bytes_per_line, width * 4 * 8 * font_size);
-
-      ptr += bytes_per_line;
+      uint32_t *dst = fb_ptr + (i * 8 * font_size) * pitch;
+      uint32_t *src = fb_ptr + ((i + 1) * 8 * font_size) * pitch;
+      memcpy(dst, src, width * 4 * 8 * font_size);
     }
-
-    memset(ptr, off_colour, width * 4 * 8 * font_size);
-
-    ptr = fb_ptr;
+    // Clear last line
+    uint32_t *last = fb_ptr + (cursory_max * 8 * font_size) * pitch;
+    memset(last, 0x00, width * 4 * 8 * font_size);
   }
 }
 

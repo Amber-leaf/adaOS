@@ -7,20 +7,20 @@
 #include "header/ist.h"
 
 void print_cpu_status(struct cpu_status *context) {
-  printf("Vector: %llu  Error Code: %016llx\n---\n", context->vector_number,
-         context->error_code);
-  printf("RAX: %016llx  RBX: %016llx\n", context->rax, context->rbx);
-  printf("RCX: %016llx  RDX: %016llx\n", context->rcx, context->rdx);
-  printf("RSI: %016llx  RDI: %016llx\n", context->rsi, context->rdi);
-  printf("RBP: %016llx\n", context->rbp);
-  printf("R8:  %016llx  R9:  %016llx\n", context->r8, context->r9);
-  printf("R10: %016llx  R11: %016llx\n", context->r10, context->r11);
-  printf("R12: %016llx  R13: %016llx\n", context->r12, context->r13);
-  printf("R14: %016llx  R15: %016llx\n", context->r14, context->r15);
+  printf_("Vector: %llu  Error Code: %016llx\n---\n", context->vector_number,
+          context->error_code);
+  printf_("RAX: %016llx  RBX: %016llx\n", context->rax, context->rbx);
+  printf_("RCX: %016llx  RDX: %016llx\n", context->rcx, context->rdx);
+  printf_("RSI: %016llx  RDI: %016llx\n", context->rsi, context->rdi);
+  printf_("RBP: %016llx\n", context->rbp);
+  printf_("R8:  %016llx  R9:  %016llx\n", context->r8, context->r9);
+  printf_("R10: %016llx  R11: %016llx\n", context->r10, context->r11);
+  printf_("R12: %016llx  R13: %016llx\n", context->r12, context->r13);
+  printf_("R14: %016llx  R15: %016llx\n", context->r14, context->r15);
 
-  printf("RIP: %016llx  CS:  %016llx\n", context->iret_rip, context->iret_cs);
-  printf("RSP: %016llx  SS:  %016llx\n", context->iret_rsp, context->iret_ss);
-  printf("RFLAGS: %016llx\n", context->iret_flags);
+  printf_("RIP: %016llx  CS:  %016llx\n", context->iret_rip, context->iret_cs);
+  printf_("RSP: %016llx  SS:  %016llx\n", context->iret_rsp, context->iret_ss);
+  printf_("RFLAGS: %016llx\n", context->iret_flags);
 }
 
 void unimplemented_fault(char *msg, struct cpu_status *context) {

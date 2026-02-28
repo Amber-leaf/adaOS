@@ -4,6 +4,7 @@
 #include "platform/x86_64/header/cpuid.h"
 #include "platform/x86_64/header/gdt.h"
 #include "platform/x86_64/header/idt.h"
+#include "platform/x86_64/header/msr.h"
 #include "platform/x86_64/header/pic.h"
 #include "util/header/log.h"
 #include "util/header/print_lowlevel.h"
@@ -30,6 +31,11 @@ __attribute__((
     section(
         ".limine_requests"))) static volatile struct limine_framebuffer_request
     framebuffer_request = {.id = LIMINE_FRAMEBUFFER_REQUEST, .revision = 0};
+
+__attribute__((
+    used,
+    section(".limine_requests"))) static volatile struct limine_memmap_request
+    memmap_request = {.id = LIMINE_MEMMAP_REQUEST, .revision = 0};
 
 // Finally, define the start and end markers for the Limine requests.
 // These can also be moved anywhere, to any .c file, as seen fit.
@@ -94,8 +100,6 @@ int memcmp(const void *s1, const void *s2, size_t n) {
   return 0;
 }
 
-// ---------- Kernel Start + Core Functions ----------
-
 static char *version_string = "0.0.2";
 
 // Halt and catch fire function.
@@ -109,28 +113,36 @@ static struct limine_framebuffer *get_framebuffer(void) {
   // Ensure we got a framebuffer.
   if (framebuffer_request.response == NULL ||
       framebuffer_request.response->framebuffer_count < 1) {
+    // we can't print an error cause no fb.
     hcf();
   }
 
   return framebuffer_request.response->framebuffers[0];
 }
 
+static struct limine_memmap_response *get_memmap(void) {
+  struct limine_memmap_response *memmap = memmap_request.response;
+  if (memmap == NULL) {
+    k_err("No memmap response!");
+    hcf();
+  }
+
+  return memmap;
+}
+
 void print_banner(void) {
   set_text_colour(0xe6a6a1);
   set_skew(1);
   k_putc(205);
-  printf("Welcome to adaOS, version %s", version_string);
+  printf_("Welcome to adaOS, version %s!", version_string);
   k_putc(205);
+  crlf();
   set_skew(0);
 
   set_text_colour(0xffffff);
-  crlf();
-  printf("Copyright (C) 2026 Ambersoft Technologies");
-  crlf();
-  printf_("See LICENCE in the source directory for details. (TL;DL, BSD 3)");
-
-  crlf();
-  crlf();
+  printf_("Copyright (C) 2026 Ambersoft Technologies.\n");
+  printf_(
+      "See LICENCE in the source directory for details. (TL;DL, BSD 3)\n\n");
 }
 
 // Main boot entrypoint.
@@ -141,6 +153,18 @@ void kmain(void) {
   }
 
   calculate_screen_constants(get_framebuffer());
+
+  struct limine_memmap_response *memmap = get_memmap();
+
+  printf_("entry_count raw: %llu\n", memmap->entry_count);
+
+  printf_("before loop\n");
+  for (uint64_t i = 0; i < memmap->entry_count; i++) {
+    printf_("segment %d: base: %p, length: %p, type: %x\n", i,
+            memmap->entries[i]->base, memmap->entries[i]->length,
+            memmap->entries[i]->type);
+  }
+  printf_("\nafter loop\n");
 
   print_banner();
 

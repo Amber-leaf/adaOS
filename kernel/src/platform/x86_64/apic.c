@@ -1,17 +1,12 @@
 #include "header/apic.h"
 #include "../../util/header/log.h"
 #include "../../util/header/panic.h"
+#include "header/msr.h"
 #include <stdint.h>
 
 #define IA32_APIC_BASE_MSR 0x1B
 
 struct APICData apic;
-
-uint64_t read_msr(uint32_t msr) {
-  uint32_t lo, hi;
-  asm volatile("rdmsr" : "=a"(lo), "=d"(hi) : "c"(msr));
-  return ((uint64_t)hi << 32) | lo;
-}
 
 struct APICData get_apic() {
   uint64_t data = read_msr(IA32_APIC_BASE_MSR);
@@ -24,7 +19,7 @@ struct APICData get_apic() {
   apic.apic_enabled = (data >> 11) & 1;    // APIC globally enabled?
   apic.apic_address = data & ~0xFFFULL;    // Base address
 
-  k_debug("bootstrap: %d, x2apic: %d, apic: %d, apic addr: %016lx",
+  k_debug("bootstrap: %d, x2apic: %d, apic enabled: %d, apic addr: %016lx",
           apic.bootstrap_processor, apic.x2_apic_enabled, apic.apic_enabled,
           apic.apic_address);
 
@@ -53,7 +48,7 @@ void setup_apic() {
     panic("Could not enable to APIC!");
   }
 
-  k_debug("APIC id: 0x%x", apic_id_ptr);
+  k_debug("APIC id: 0x%x", *apic_id_ptr);
 
   uint64_t *apic_timer_lvt_ptr = apic_ptr + 0x320; // todo
   uint64_t *apic_thermal_lvt_ptr = apic_ptr + 0x330;
@@ -71,5 +66,5 @@ void send_eio() {
   uint64_t *apic_ptr = &apic.apic_address;
   uint64_t *eoi_ptr = apic_ptr + 0xB0;
 
-  eoi_ptr[0] = 0;
+  *eoi_ptr = 0;
 }

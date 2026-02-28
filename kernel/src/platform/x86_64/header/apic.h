@@ -25,7 +25,6 @@ struct LVTEntry {
 };
 
 struct APICData get_apic();
-uint64_t read_msr(uint32_t msr);
 void setup_apic();
 void send_eio();
 

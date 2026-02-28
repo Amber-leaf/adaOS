@@ -15,7 +15,7 @@ void set_skew(uint8_t n);
 void clear(void);
 uint32_t calculate_y(void);
 uint32_t calculate_x(void);
-void k_putc(uint16_t c);
+void k_putc(uint16_t c)  __attribute__((used));
 void k_puts(const char *s);
 void k_puti(uint32_t n);
 void crlf(void);
