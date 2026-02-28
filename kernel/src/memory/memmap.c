@@ -55,6 +55,7 @@ void print_free_ram() {
   k_log("%d.%02d GiB RAM free.", gib, decimal);
 
   if (length_gib < 0.5) {
-    panic("Insufficient memory. adaOS needs more memory free than 0.5GiB");
+    panic("Insufficient memory. adaOS probably needs \nmore than 0.5GiB of "
+          "memory free");
   }
 }
