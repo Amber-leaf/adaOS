@@ -46,12 +46,15 @@ void print_free_ram() {
       length += memmap->entries[i]->length;
     }
   }
-  uint32_t length_kib = length / 1024;
-  uint16_t length_gib = length / 1073741824;
+  uint32_t length_gib = length / 1073741824;
 
-  k_log("%dGiB (%d KiB) free RAM.", length_gib, length_kib);
+  uint64_t gib = length / 1073741824ULL;
+  uint64_t remainder = length % 1073741824ULL;
 
-  if (length_kib < 8192) {
-    panic("Insufficient memory. adaOS needs more memory free than 8192KiB");
+  uint64_t decimal = (remainder * 100) / 1073741824ULL;
+  k_log("%d.%02d GiB RAM free.", gib, decimal);
+
+  if (length_gib < 0.5) {
+    panic("Insufficient memory. adaOS needs more memory free than 0.5GiB");
   }
 }
