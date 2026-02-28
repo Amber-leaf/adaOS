@@ -125,10 +125,12 @@ void print_banner(void) {
   crlf();
   set_skew(0);
 
-  set_text_colour(0xffffff);
+  set_text_colour(0xe0e0e0);
   printf_("Copyright (C) 2026 Ambersoft Technologies.\n");
   printf_(
       "See LICENCE in the source directory for details. (TL;DL, BSD 3)\n\n");
+  print_free_ram();
+  crlf();
 }
 
 // Main boot entrypoint.
@@ -167,8 +169,6 @@ void kmain(void) {
   setup_apic();
 
   k_ok("APIC Setup");
-
-  print_mem_segments();
 
   hcf();
 }

@@ -2,6 +2,7 @@
 #include "../header/core.h"
 #include "../header/limine.h"
 #include "../util/header/log.h"
+#include "../util/header/panic.h"
 #include "../util/header/printf.h"
 
 #include <stddef.h>
@@ -23,20 +24,34 @@ __attribute__((
 struct limine_memmap_response *get_memmap(void) {
   struct limine_memmap_response *memmap = memmap_request.response;
   if (memmap == NULL) {
-    k_err("No memmap response!");
-    hcf();
+    panic("No memmap response!");
   }
 
   return memmap;
 }
 
-void print_mem_segments() {
+void print_free_ram() {
   struct limine_memmap_response *memmap = get_memmap();
+
+  uint64_t length;
 
   k_debug("%d entries", memmap->entry_count);
   for (uint64_t i = 0; i < memmap->entry_count; i++) {
     k_debug("seg %d: base: %p, length: %p\ntype: %s", i,
             memmap->entries[i]->base, memmap->entries[i]->length,
             LIMINE_MEMMAP_STRINGS[memmap->entries[i]->type]);
+
+    uint64_t type = memmap->entries[i]->type;
+    if (type == 0 || type == 2 || type == 5) {
+      length += memmap->entries[i]->length;
+    }
+  }
+  uint32_t length_kib = length / 1024;
+  uint16_t length_gib = length / 1073741824;
+
+  k_log("%dGiB (%d KiB) free RAM.", length_gib, length_kib);
+
+  if (length_kib < 8192) {
+    panic("Insufficient memory. adaOS needs more memory free than 8192KiB");
   }
 }

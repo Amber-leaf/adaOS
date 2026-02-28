@@ -1,7 +1,9 @@
 #include "header/print_lowlevel.h"
 #include "header/printf.h"
 
-#define DEBUG
+#define PLAIN_TEXT_COLOUR 0xb0b0b0
+
+// #define DEBUG
 #define LOG
 #define OK
 #define ERR
@@ -16,7 +18,7 @@ void k_debug(char *format, ...) {
   k_puts("[DBG] Kernel: ");
   vprintf(format, va);
   va_end(va);
-  set_text_colour(0xffffff);
+  set_text_colour(PLAIN_TEXT_COLOUR);
   crlf();
 #endif
 }
@@ -26,7 +28,7 @@ void k_log(char *format, ...) {
   va_list va;
   va_start(va, format);
 
-  set_text_colour(0xffffff);
+  set_text_colour(PLAIN_TEXT_COLOUR);
   k_puts("[LOG] Kernel: ");
   vprintf(format, va);
   va_end(va);
@@ -42,7 +44,7 @@ void k_ok(char *format, ...) {
   k_puts("[");
   set_text_colour(0x66ff66);
   k_puts("OK~");
-  set_text_colour(0xffffff);
+  set_text_colour(PLAIN_TEXT_COLOUR);
   k_puts("] Kernel: ");
 
   vprintf(format, va);
@@ -59,7 +61,7 @@ void k_wrn(char *format, ...) {
   k_puts("[");
   set_text_colour(0xffff66);
   k_puts("WRN");
-  set_text_colour(0xffffff);
+  set_text_colour(PLAIN_TEXT_COLOUR);
   k_puts("] Kernel: ");
   vprintf(format, va);
   va_end(va);
@@ -75,7 +77,7 @@ void k_err(char *format, ...) {
   k_puts("[");
   set_text_colour(0xff6666);
   k_puts("ERR");
-  set_text_colour(0xffffff);
+  set_text_colour(PLAIN_TEXT_COLOUR);
   k_puts("] Kernel: ");
   vprintf(format, va);
   va_end(va);
