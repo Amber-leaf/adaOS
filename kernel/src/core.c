@@ -1,5 +1,6 @@
 #include "header/core.h"
 #include "header/limine.h"
+#include "memory/header/memmap.h"
 #include "platform/x86_64/header/apic.h"
 #include "platform/x86_64/header/cpuid.h"
 #include "platform/x86_64/header/gdt.h"
@@ -31,11 +32,6 @@ __attribute__((
     section(
         ".limine_requests"))) static volatile struct limine_framebuffer_request
     framebuffer_request = {.id = LIMINE_FRAMEBUFFER_REQUEST, .revision = 0};
-
-__attribute__((
-    used,
-    section(".limine_requests"))) static volatile struct limine_memmap_request
-    memmap_request = {.id = LIMINE_MEMMAP_REQUEST, .revision = 0};
 
 // Finally, define the start and end markers for the Limine requests.
 // These can also be moved anywhere, to any .c file, as seen fit.
@@ -120,16 +116,6 @@ static struct limine_framebuffer *get_framebuffer(void) {
   return framebuffer_request.response->framebuffers[0];
 }
 
-static struct limine_memmap_response *get_memmap(void) {
-  struct limine_memmap_response *memmap = memmap_request.response;
-  if (memmap == NULL) {
-    k_err("No memmap response!");
-    hcf();
-  }
-
-  return memmap;
-}
-
 void print_banner(void) {
   set_text_colour(0xe6a6a1);
   set_skew(1);
@@ -153,18 +139,6 @@ void kmain(void) {
   }
 
   calculate_screen_constants(get_framebuffer());
-
-  struct limine_memmap_response *memmap = get_memmap();
-
-  printf_("entry_count raw: %llu\n", memmap->entry_count);
-
-  printf_("before loop\n");
-  for (uint64_t i = 0; i < memmap->entry_count; i++) {
-    printf_("segment %d: base: %p, length: %p, type: %x\n", i,
-            memmap->entries[i]->base, memmap->entries[i]->length,
-            memmap->entries[i]->type);
-  }
-  printf_("\nafter loop\n");
 
   print_banner();
 
@@ -193,6 +167,8 @@ void kmain(void) {
   setup_apic();
 
   k_ok("APIC Setup");
+
+  print_mem_segments();
 
   hcf();
 }
