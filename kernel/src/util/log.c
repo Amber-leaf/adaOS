@@ -3,7 +3,7 @@
 
 #define PLAIN_TEXT_COLOUR 0xb0b0b0
 
-// #define DEBUG
+#define DEBUG
 #define LOG
 #define OK
 #define ERR

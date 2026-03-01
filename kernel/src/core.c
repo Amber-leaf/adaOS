@@ -1,6 +1,7 @@
 #include "header/core.h"
 #include "header/limine.h"
 #include "memory/header/memmap.h"
+#include "memory/physical/header/bitmap_alloc.h"
 #include "platform/x86_64/header/apic.h"
 #include "platform/x86_64/header/cpuid.h"
 #include "platform/x86_64/header/gdt.h"
@@ -169,6 +170,8 @@ void kmain(void) {
   setup_apic();
 
   k_ok("APIC Setup");
+
+  setup_physical_paging();
 
   hcf();
 }

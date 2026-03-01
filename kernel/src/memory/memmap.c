@@ -6,6 +6,7 @@
 
 #include "../util/header/panic.h"
 
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -32,66 +33,68 @@ struct limine_memmap_response *get_memmap(void) {
   return memmap;
 }
 
-void fill_free_chunks() {
+bool is_memory_free(int type) {
+  if (type == 0) { // TODO: || type == 2 || type == 5) {
+    return true;
+  }
+  return false;
+}
+
+struct memory_descrtiptor get_memory_descriptor() {
   struct limine_memmap_response *memmap = get_memmap();
 
-  uint8_t free_segments = 0;
-
-  for (uint64_t i = 0; i < memmap->entry_count; i++) {
-    uint64_t type = memmap->entries[i]->type;
-
-    if (type == 0 || type == 2 || type == 5) {
-      free_segments += memmap->entries[i]->length;
-    }
-  }
-
-  struct contiguous_memory_chunk free_chunks[free_segments];
-
-  uint8_t q = 0;
+  struct memory_descrtiptor desc;
+  static struct contiguous_memory_chunk free_chunks[MAX_CHUNKS];
+  uint8_t found_chunks = 0;
+  desc.length = 0;
 
   for (uint64_t i = 0; i < memmap->entry_count; i++) {
     uint64_t type = memmap->entries[i]->type;
     uint64_t base = memmap->entries[i]->base;
     uint64_t length = memmap->entries[i]->length;
 
-    if (type == 0 || type == 2 || type == 5) {
-      free_chunks[q].base = base;
-      free_chunks[q].bounds = base + length;
+    if (is_memory_free(type)) {
+      if (free_chunks[found_chunks - 1].bounds == base) {
+        free_chunks[found_chunks - 1].bounds = base + length;
+        desc.length += length;
+        continue;
+      }
 
-      q++;
+      free_chunks[found_chunks].base = base;
+      free_chunks[found_chunks].bounds = base + length;
+      desc.length += length;
+      found_chunks++;
     }
   }
 
-  for (int i = 0; i < free_segments; i++) {
-    printf_("base %p, bounds %p", free_chunks[i].base, free_chunks[i].bounds);
+  desc.chunk_ptr = free_chunks;
+  desc.chunk_count = found_chunks;
+
+  for (int i = 0; i < desc.chunk_count; i++) {
+    k_debug("%d: %p %p", i, desc.chunk_ptr[i].base, desc.chunk_ptr[i].bounds);
   }
+
+  return desc;
 }
 
-uint64_t get_free_ram() {
+void debug_print_mem_map() {
   struct limine_memmap_response *memmap = get_memmap();
 
-  uint64_t length = 0;
-
-  k_debug("%d entries", memmap->entry_count);
-
   for (uint64_t i = 0; i < memmap->entry_count; i++) {
-
-    k_debug("seg %d: base: %p, length: %p\ntype: %s", i,
-            memmap->entries[i]->base, memmap->entries[i]->length,
-            LIMINE_MEMMAP_STRINGS[memmap->entries[i]->type]);
-
     uint64_t type = memmap->entries[i]->type;
+    uint64_t base = memmap->entries[i]->base;
+    uint64_t length = memmap->entries[i]->length;
 
-    if (type == 0 || type == 2 || type == 5) {
-      length += memmap->entries[i]->length;
-    }
+    k_debug("seg %d: type: %s. base: %p.\nlength: %p. free: %d", i,
+            LIMINE_MEMMAP_STRINGS[type], base, length,
+            is_memory_free(type) ? 1 : 0);
   }
-
-  return length;
 }
 
 void print_free_ram() {
-  uint64_t length = get_free_ram();
+  struct memory_descrtiptor desc = get_memory_descriptor();
+
+  uint64_t length = desc.length;
 
   uint32_t length_gib = length / 1073741824;
 
