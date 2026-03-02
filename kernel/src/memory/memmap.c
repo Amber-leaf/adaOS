@@ -2,7 +2,6 @@
 #include "../header/core.h"
 #include "../header/limine.h"
 #include "../util/header/log.h"
-#include "../util/header/printf.h"
 
 #include "../util/header/panic.h"
 

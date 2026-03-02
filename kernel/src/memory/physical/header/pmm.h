@@ -1,10 +1,13 @@
-#ifndef BITMAP_ALLOC_H_
-#define BITMAP_ALLOC_H_
+#ifndef PMM_H_
+#define PMM_H_
 
 #include <stdint.h>
 #include <stdbool.h>
 
-void setup_physical_paging();
+#define PAGE_SIZE 4096
+#define MAX_PAGES 1024 * 1024
+
+void setup_pmm();
 void *pp_alloc();
 void *_pp_alloc(uint64_t page_index);
 void* page_to_ptr(uint64_t page_index);

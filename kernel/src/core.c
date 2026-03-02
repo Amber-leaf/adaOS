@@ -1,7 +1,7 @@
 #include "header/core.h"
 #include "header/limine.h"
 #include "memory/header/memmap.h"
-#include "memory/physical/header/bitmap_alloc.h"
+#include "memory/physical/header/pmm.h"
 #include "platform/x86_64/header/apic.h"
 #include "platform/x86_64/header/cpuid.h"
 #include "platform/x86_64/header/gdt.h"
@@ -171,7 +171,11 @@ void kmain(void) {
 
   k_ok("APIC Setup");
 
-  setup_physical_paging();
+  setup_pmm();
+
+  k_ok("Setup PMM");
+
+  k_log("Halt");
 
   hcf();
 }

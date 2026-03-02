@@ -1,9 +1,9 @@
-#include "header/bitmap_alloc.h"
+#include "header/pmm.h"
 #include "../header/memmap.h"
 
+#include "../../header/core.h"
 #include "../../util/header/log.h"
 #include "../../util/header/panic.h"
-#include "../../util/header/printf.h"
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -11,12 +11,9 @@
 #define USED false
 #define FREE true
 
-#define PAGE_SIZE 4096
-#define MAX_PAGES 1024 * 1024
-
-#define SUPPORTED_MEM MAX_PAGES *PAGE_SIZE
-
 #define MAX_SEGMENTS 32
+
+#define NONE 0b00000000
 
 uint8_t page_bitmap[MAX_PAGES / 8]; // if set then used
 
@@ -42,7 +39,6 @@ bool page_free(uint64_t page_index) {
 }
 
 void set_page(uint64_t page_index, bool free) {
-
   uint64_t byte = page_index / 8;
   uint8_t bit = page_index % 8;
 
@@ -61,15 +57,13 @@ uint64_t get_free_page() {
     last_page_used = MAX_PAGES - 1;
   }
 
-  if (page_free(last_page_used + 1)) {
-    set_page(last_page_used + 1, USED);
+  if (page_free(last_page_used++)) {
     return last_page_used;
   }
 
   // TODO: do this better!
   for (uint64_t i = 0; i <= MAX_PAGES; i++) {
     if (page_free(i)) {
-      set_page(i, USED);
       last_page_used = i;
       return i;
     }
@@ -81,7 +75,7 @@ uint64_t get_free_page() {
 
 void generate_page_mapping() {
   uint64_t pages_used = 0;
-  for (uint32_t i = 0; i <= desc.chunk_count; i++) {
+  for (uint32_t i = 0; i < desc.chunk_count; i++) {
     struct contiguous_memory_chunk chunk = desc.chunk_ptr[i];
 
     page_mappings[i].offset = chunk.base;
@@ -103,7 +97,7 @@ retry:
   uint64_t segment_size =
       (mapping.page_end_index - mapping.page_start_index) * PAGE_SIZE;
 
-  if (ptr >= (void *)mapping.offset &&
+  if (ptr > (void *)mapping.offset &&
       ptr < (void *)(mapping.offset + segment_size)) {
 
     return mapping.page_start_index +
@@ -125,23 +119,13 @@ retry:
 
 void *page_to_ptr(uint64_t page_index) {
   struct page_mapping mapping;
-  uint64_t prev_end;
   bool wrapped = false;
 
 retry:
   mapping = page_mappings[last_used_mapping];
 
-  if (last_used_mapping != 0) {
-    prev_end = page_mappings[last_used_mapping - 1].page_end_index;
-  } else {
-    prev_end = 0;
-  }
-
-  if (page_index >= mapping.page_start_index &&
-      page_index <= mapping.page_end_index) {
-    k_debug("page %d is at %p.", page_index,
-            ((page_index - prev_end) * PAGE_SIZE) + mapping.offset);
-
+  if (page_index > mapping.page_start_index &&
+      page_index < mapping.page_end_index) {
     return (void *)(mapping.offset +
                     (page_index - mapping.page_start_index) * PAGE_SIZE);
 
@@ -156,7 +140,7 @@ retry:
     goto retry;
   }
 
-  k_err("Failed to allocate physical page %d!", page_index);
+  k_err("Failed to find physical page %d!", page_index);
   k_debug("last used mapping: %d", last_used_mapping);
 
   return NULL;
@@ -167,6 +151,7 @@ void *_pp_alloc(uint64_t page_index) {
     set_page(page_index, USED);
     return page_to_ptr(page_index);
   }
+  k_wrn("tried to allocate a page (%d) that was not free!", page_index);
   return NULL;
 }
 
@@ -175,7 +160,24 @@ void *pp_alloc() {
   return _pp_alloc(index);
 }
 
-void setup_physical_paging() {
+void _pp_free(uint64_t page_index) {
+  k_debug("physical page %d freed", page_index);
+
+  set_page(page_index, FREE);
+}
+
+void pp_free(void *ptr) {
+  uint64_t page_index = ptr_to_page(ptr);
+  k_debug("aaaaaaa %d", page_index);
+
+  if (page_index < 0) {
+    return;
+  }
+
+  _pp_free(page_index);
+}
+
+void setup_pmm() {
   desc = get_memory_descriptor();
   generate_page_mapping();
 
@@ -184,10 +186,4 @@ void setup_physical_paging() {
             page_mappings[i].offset, page_mappings[i].page_start_index,
             page_mappings[i].page_end_index);
   }
-
-  pp_alloc();
-  pp_alloc();
-  pp_alloc();
-  pp_alloc();
-  pp_alloc();
 }

@@ -23,6 +23,12 @@ struct APICData get_apic() {
           apic.bootstrap_processor, apic.x2_apic_enabled, apic.apic_enabled,
           apic.apic_address);
 
+  if (!apic.apic_enabled && apic.x2_apic_enabled) {
+    panic("x2APIC currently unsupported");
+  } else if (!apic.apic_enabled) {
+    panic("APIC not enabled");
+  }
+
   return apic;
 }
 
