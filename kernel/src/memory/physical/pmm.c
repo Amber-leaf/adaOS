@@ -13,8 +13,6 @@
 
 #define MAX_SEGMENTS 32
 
-#define NONE 0b00000000
-
 uint8_t page_bitmap[MAX_PAGES / 8]; // if set then used
 
 struct page_mapping page_mappings[MAX_SEGMENTS];
