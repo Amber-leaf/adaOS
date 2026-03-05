@@ -23,7 +23,11 @@ uint32_t mapped_in_segment = 0;
 
 uint64_t last_page_used = 0;
 
-struct memory_descrtiptor desc;
+uint64_t free_pages = MAX_PAGES;
+
+uint64_t used_pages = 0;
+
+struct memory_descriptor desc;
 
 bool page_free(uint64_t page_index) {
   uint64_t byte = page_index / 8;
@@ -42,15 +46,23 @@ void set_page(uint64_t page_index, bool free) {
 
   if (free) {
     page_bitmap[byte] &= ~(1 << bit);
+    free_pages++;
+    used_pages--;
   } else {
     k_debug("physical page %d allocated", page_index);
     page_bitmap[byte] |= (1 << bit);
     last_page_used = page_index;
+    free_pages--;
+    used_pages++;
   }
 }
 
 // get a free page's index and set it to be used. see pp_alloc.
 uint64_t get_free_page() {
+  if (last_page_used >= get_k_addr()->physical_base) {
+    last_page_used = 0;
+  }
+
   if (last_page_used >= MAX_PAGES) {
     last_page_used = MAX_PAGES - 1;
   }
@@ -88,6 +100,16 @@ void generate_page_mapping() {
 uint64_t ptr_to_page(void *ptr) {
   struct page_mapping mapping;
   bool wrapped = false;
+
+  if (ptr == NULL) {
+    k_err("NULL pointer passed to ptr_to_page!");
+    return -1;
+  }
+
+  if ((uint64_t)ptr % PAGE_SIZE != 0) {
+    k_err("Non-page alined pointer passed to ptr_to_page!");
+    return -1;
+  }
 
 retry:
   mapping = page_mappings[last_used_mapping];
@@ -138,13 +160,20 @@ retry:
     goto retry;
   }
 
-  k_err("Failed to find physical page %d!", page_index);
+  k_err("Failed to find mapping for physical page %d!", page_index);
   k_debug("last used mapping: %d", last_used_mapping);
 
   return NULL;
 }
 
 void *_pp_alloc(uint64_t page_index) {
+  if (page_index >= get_k_addr()->physical_base) {
+    k_wrn("tried to allocate a page (%d) that was in the kernel's executable "
+          "space!",
+          page_index);
+    return NULL;
+  }
+
   if (page_free(page_index)) {
     set_page(page_index, USED);
     return page_to_ptr(page_index);
@@ -166,11 +195,6 @@ void _pp_free(uint64_t page_index) {
 
 void pp_free(void *ptr) {
   uint64_t page_index = ptr_to_page(ptr);
-  k_debug("aaaaaaa %d", page_index);
-
-  if (page_index < 0) {
-    return;
-  }
 
   _pp_free(page_index);
 }
@@ -184,4 +208,9 @@ void setup_pmm() {
             page_mappings[i].offset, page_mappings[i].page_start_index,
             page_mappings[i].page_end_index);
   }
+
+  k_debug("k physical addr: %p, virt addr: %p", get_k_addr()->physical_base,
+          get_k_addr()->virtual_base);
+
+  k_debug("hhdm offset %p", get_hhdm()->offset);
 }

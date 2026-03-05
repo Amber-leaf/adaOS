@@ -8,6 +8,7 @@
 #include "platform/x86_64/header/idt.h"
 #include "platform/x86_64/header/msr.h"
 #include "platform/x86_64/header/pic.h"
+#include "util/header/date.h"
 #include "util/header/log.h"
 #include "util/header/print_lowlevel.h"
 #include "util/header/printf.h"
@@ -33,6 +34,11 @@ __attribute__((
     section(
         ".limine_requests"))) static volatile struct limine_framebuffer_request
     framebuffer_request = {.id = LIMINE_FRAMEBUFFER_REQUEST, .revision = 0};
+__attribute__((
+    used,
+    section(
+        ".limine_requests"))) static volatile struct limine_date_at_boot_request
+    bootime_request = {.id = LIMINE_DATE_AT_BOOT_REQUEST, .revision = 0};
 
 // Finally, define the start and end markers for the Limine requests.
 // These can also be moved anywhere, to any .c file, as seen fit.
@@ -117,6 +123,14 @@ static struct limine_framebuffer *get_framebuffer(void) {
   return framebuffer_request.response->framebuffers[0];
 }
 
+int64_t get_bootime(void) {
+  if (bootime_request.response == NULL) {
+    k_err("Could not get time at boot!");
+  }
+
+  return bootime_request.response->timestamp;
+}
+
 void print_banner(void) {
   set_text_colour(0xe6a6a1);
   set_skew(1);
@@ -127,6 +141,10 @@ void print_banner(void) {
   set_skew(0);
 
   set_text_colour(0xe0e0e0);
+  char ts[25];
+  ms_to_iso8601(get_bootime() * 1000, ts, sizeof(ts));
+
+  printf_("The date is %s.\n\n", ts);
   printf_("Copyright (C) 2026 Ambersoft Technologies.\n");
   printf_(
       "See LICENCE in the source directory for details. (TL;DL, BSD 3)\n\n");

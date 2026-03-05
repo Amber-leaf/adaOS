@@ -23,6 +23,15 @@ __attribute__((
     section(".limine_requests"))) static volatile struct limine_memmap_request
     memmap_request = {.id = LIMINE_MEMMAP_REQUEST, .revision = 0};
 
+__attribute__((used, section(".limine_requests"))) static volatile struct
+    limine_executable_address_request k_addr_request = {
+        .id = LIMINE_EXECUTABLE_ADDRESS_REQUEST, .revision = 0};
+
+__attribute__((
+    used,
+    section(".limine_requests"))) static volatile struct limine_hhdm_request
+    hhdm_request = {.id = LIMINE_HHDM_REQUEST, .revision = 0};
+
 struct limine_memmap_response *get_memmap(void) {
   struct limine_memmap_response *memmap = memmap_request.response;
   if (memmap == NULL) {
@@ -32,6 +41,24 @@ struct limine_memmap_response *get_memmap(void) {
   return memmap;
 }
 
+struct limine_executable_address_response *get_k_addr(void) {
+  struct limine_executable_address_response *k_addr = k_addr_request.response;
+  if (k_addr == NULL) {
+    panic("No kernel address response!");
+  }
+
+  return k_addr;
+}
+
+struct limine_hhdm_response *get_hhdm(void) {
+  struct limine_hhdm_response *hhdm = hhdm_request.response;
+  if (hhdm == NULL) {
+    panic("No hhdm response!");
+  }
+
+  return hhdm;
+}
+
 bool is_memory_free(int type) {
   if (type == 0) { // TODO: || type == 2 || type == 5) {
     return true;
@@ -39,10 +66,10 @@ bool is_memory_free(int type) {
   return false;
 }
 
-struct memory_descrtiptor get_memory_descriptor() {
+struct memory_descriptor get_memory_descriptor() {
   struct limine_memmap_response *memmap = get_memmap();
 
-  struct memory_descrtiptor desc;
+  struct memory_descriptor desc;
   static struct contiguous_memory_chunk free_chunks[MAX_CHUNKS];
   uint8_t found_chunks = 0;
   desc.length = 0;
@@ -91,7 +118,7 @@ void debug_print_mem_map() {
 }
 
 void print_free_ram() {
-  struct memory_descrtiptor desc = get_memory_descriptor();
+  struct memory_descriptor desc = get_memory_descriptor();
 
   uint64_t length = desc.length;
 
