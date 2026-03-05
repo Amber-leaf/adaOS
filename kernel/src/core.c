@@ -163,17 +163,23 @@ void kmain(void) {
 
   k_ok("IDT Init");
 
-  setup_pic();
-
-  k_ok("Disabled PIC");
-
-  setup_apic();
-
-  k_ok("APIC Setup");
+  // 0x800 | 0x100 | 0x001
+  write_msr(IA32_EFER, 0x901);
+  if (read_msr(IA32_EFER) != 0xd01) {
+    k_err("IA32_EFER Error: could not set IA_32e mode");
+  }
 
   setup_pmm();
 
   k_ok("Setup PMM");
+
+  // setup_pic();
+
+  // k_ok("Disabled PIC");
+
+  // setup_apic();
+
+  // k_ok("APIC Setup");
 
   k_log("Halt");
 

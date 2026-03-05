@@ -4,11 +4,11 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-struct APICData {
+struct LocalAPICData {
     bool bootstrap_processor;
-    bool x2_apic_enabled; // i think this is only an itanium thing, anyway we don't support it.
+    bool x2_apic_enabled;
     bool apic_enabled;
-    uint64_t apic_address;
+    void* apic_address;
 };
 
 struct LVTEntry {
@@ -24,7 +24,7 @@ struct LVTEntry {
     bool mask : 1; // on 1 the interrupt is disabled, if 0 is enabled.
 };
 
-struct APICData get_apic();
+struct LocalAPICData get_apic();
 void setup_apic();
 void send_eio();
 
