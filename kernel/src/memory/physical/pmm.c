@@ -13,6 +13,8 @@
 
 #define MAX_SEGMENTS 32
 
+#define VMM_HIGHER_HALF get_hhdm()->offset
+
 uint8_t page_bitmap[MAX_PAGES / 8]; // if set then used
 
 struct page_mapping page_mappings[MAX_SEGMENTS];
@@ -29,6 +31,17 @@ uint64_t used_pages = 0;
 
 struct memory_descriptor desc;
 
+uint64_t get_used_memory() {
+    uint64_t used = used_pages;
+    return used * PAGE_SIZE;
+}
+
+uint64_t get_free_memory() {
+    uint64_t free = free_pages;
+    return free * PAGE_SIZE;
+}
+
+// check whether a physical page is free, see pp_free() for deallocating.
 bool page_free(uint64_t page_index) {
   uint64_t byte = page_index / 8;
   uint8_t bit = page_index % 8;
@@ -57,7 +70,7 @@ void set_page(uint64_t page_index, bool free) {
   }
 }
 
-// get a free page's index and set it to be used. see pp_alloc.
+// get the "best" free page's index
 uint64_t get_free_page() {
   if (last_page_used >= get_k_addr()->physical_base) {
     last_page_used = 0;
@@ -168,15 +181,29 @@ retry:
 
 void *_pp_alloc(uint64_t page_index) {
   if (page_index >= get_k_addr()->physical_base) {
-    k_wrn("tried to allocate a page (%d) that was in the kernel's executable "
+    k_err("tried to allocate a page (%d) that was in the kernel executable's "
           "space!",
           page_index);
     return NULL;
   }
 
+  if (page_index > MAX_PAGES) {
+    k_err("tried to allocate physical page %d at %p that was outside the "
+          "bounds of paged memory!",
+          page_index, page_to_ptr(page_index));
+    return NULL;
+  }
+
   if (page_free(page_index)) {
     set_page(page_index, USED);
-    return page_to_ptr(page_index);
+
+    void *addr = page_to_ptr(page_index);
+
+    void *vaddr = (void *)((uintptr_t)addr + VMM_HIGHER_HALF);
+
+    memset(vaddr, 0, PAGE_SIZE);
+
+    return addr;
   }
   k_wrn("tried to allocate a page (%d) that was not free!", page_index);
   return NULL;
@@ -188,6 +215,18 @@ void *pp_alloc() {
 }
 
 void _pp_free(uint64_t page_index) {
+  if (page_index > MAX_PAGES) {
+    k_err("tried to free physical page %d at %p that was outside the bounds of "
+          "paged memory!",
+          page_index, page_to_ptr(page_index));
+    return;
+  }
+
+  if (page_free(page_index)) {
+    k_wrn("tried to free physical page %d that was allready free!", page_index);
+    return;
+  }
+
   k_debug("physical page %d freed", page_index);
 
   set_page(page_index, FREE);
