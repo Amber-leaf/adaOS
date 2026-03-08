@@ -32,6 +32,10 @@ __attribute__((
     section(".limine_requests"))) static volatile struct limine_hhdm_request
     hhdm_request = {.id = LIMINE_HHDM_REQUEST, .revision = 0};
 
+__attribute__((used, section(".limine_requests"))) static volatile struct
+    limine_executable_file_request exe_request = {
+        .id = LIMINE_EXECUTABLE_FILE_REQUEST, .revision = 0};
+
 struct limine_memmap_response *get_memmap(void) {
   struct limine_memmap_response *memmap = memmap_request.response;
   if (memmap == NULL) {
@@ -59,11 +63,19 @@ struct limine_hhdm_response *get_hhdm(void) {
   return hhdm;
 }
 
-bool is_memory_free(int type) {
-  if (type == 0) { // TODO: || type == 2 || type == 5) {
-    return true;
+struct limine_executable_file_response *get_exe(void) {
+  struct limine_executable_file_response *exe = exe_request.response;
+  if (exe == NULL) {
+    panic("No executable file response!");
   }
-  return false;
+
+  return exe;
+}
+
+bool is_memory_free(int type) {
+  return type == LIMINE_MEMMAP_USABLE ||
+         type == LIMINE_MEMMAP_ACPI_RECLAIMABLE ||
+         type == LIMINE_MEMMAP_BOOTLOADER_RECLAIMABLE;
 }
 
 struct memory_descriptor get_memory_descriptor() {
@@ -80,12 +92,11 @@ struct memory_descriptor get_memory_descriptor() {
     uint64_t length = memmap->entries[i]->length;
 
     if (is_memory_free(type)) {
-      if (free_chunks[found_chunks - 1].bounds == base) {
+      if (found_chunks > 0 && free_chunks[found_chunks - 1].bounds == base) {
         free_chunks[found_chunks - 1].bounds = base + length;
         desc.length += length;
         continue;
       }
-
       free_chunks[found_chunks].base = base;
       free_chunks[found_chunks].bounds = base + length;
       desc.length += length;
@@ -132,6 +143,8 @@ void print_free_ram() {
 
   if (length_gib < 0.5) {
     panic("Insufficient memory. adaOS probably needs \nmore than 0.5GiB of "
-          "memory free");
+          "memory free.");
   }
+
+  debug_print_mem_map();
 }

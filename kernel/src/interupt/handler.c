@@ -1,8 +1,8 @@
+#include "../header/core.h"
 #include "../platform/x86_64/header/apic.h"
 #include "../util/header/log.h"
 #include "../util/header/panic.h"
 #include "../util/header/printf.h"
-
 #include "header/interupt_defines.h"
 #include "header/ist.h"
 
@@ -86,6 +86,7 @@ void exception_handler(struct cpu_status *context) {
     break;
   case 0xE: // #PF Page Fault
     unimplemented_fault("Page Fault (#PF)", context);
+    hcf();
     break;
   case 0xF: // Reserved
     unimplemented_fault("Reserved (0xF)", context);

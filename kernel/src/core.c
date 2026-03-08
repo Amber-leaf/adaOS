@@ -2,6 +2,7 @@
 #include "header/limine.h"
 #include "memory/header/memmap.h"
 #include "memory/physical/header/pmm.h"
+#include "memory/virtual/header/vmm.h"
 #include "platform/x86_64/header/apic.h"
 #include "platform/x86_64/header/cpuid.h"
 #include "platform/x86_64/header/gdt.h"
@@ -112,7 +113,7 @@ void hcf(void) {
   }
 }
 
-static struct limine_framebuffer *get_framebuffer(void) {
+struct limine_framebuffer *get_framebuffer(void) {
   // Ensure we got a framebuffer.
   if (framebuffer_request.response == NULL ||
       framebuffer_request.response->framebuffer_count < 1) {
@@ -190,6 +191,10 @@ void kmain(void) {
   setup_pmm();
 
   k_ok("Setup PMM");
+
+  setup_vmm();
+
+  k_ok("Setup VMM");
 
   // setup_pic();
 

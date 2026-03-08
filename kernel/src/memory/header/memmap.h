@@ -4,6 +4,9 @@
 #include <stdint.h>
 #include "../../header/limine.h"
 
+#define VMM_HIGHER_HALF (get_hhdm()->offset)
+
+#define ALIGN_UP(value, align) (((value) + (align) - 1) & ~((align) - 1))
 
 #define MAX_CHUNKS 128
 
@@ -24,5 +27,6 @@ void debug_print_mem_map();
 struct memory_descriptor get_memory_descriptor();
 struct limine_executable_address_response *get_k_addr(void);
 struct limine_hhdm_response *get_hhdm(void);
+struct limine_executable_file_response *get_exe(void);
 
 #endif

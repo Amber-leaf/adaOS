@@ -13,8 +13,6 @@
 
 #define MAX_SEGMENTS 32
 
-#define VMM_HIGHER_HALF get_hhdm()->offset
-
 uint8_t page_bitmap[MAX_PAGES / 8]; // if set then used
 
 struct page_mapping page_mappings[MAX_SEGMENTS];
@@ -23,7 +21,7 @@ uint32_t last_used_mapping = 0;
 
 uint32_t mapped_in_segment = 0;
 
-uint64_t last_page_used = 0;
+uint64_t last_page_used = 1;
 
 uint64_t free_pages = MAX_PAGES;
 
@@ -32,13 +30,13 @@ uint64_t used_pages = 0;
 struct memory_descriptor desc;
 
 uint64_t get_used_memory() {
-    uint64_t used = used_pages;
-    return used * PAGE_SIZE;
+  uint64_t used = used_pages;
+  return used * PAGE_SIZE;
 }
 
 uint64_t get_free_memory() {
-    uint64_t free = free_pages;
-    return free * PAGE_SIZE;
+  uint64_t free = free_pages;
+  return free * PAGE_SIZE;
 }
 
 // check whether a physical page is free, see pp_free() for deallocating.
@@ -62,7 +60,7 @@ void set_page(uint64_t page_index, bool free) {
     free_pages++;
     used_pages--;
   } else {
-    k_debug("physical page %d allocated", page_index);
+    // k_debug("physical page %d allocated", page_index);
     page_bitmap[byte] |= (1 << bit);
     last_page_used = page_index;
     free_pages--;
@@ -73,7 +71,7 @@ void set_page(uint64_t page_index, bool free) {
 // get the "best" free page's index
 uint64_t get_free_page() {
   if (last_page_used >= get_k_addr()->physical_base) {
-    last_page_used = 0;
+    last_page_used = 1;
   }
 
   if (last_page_used >= MAX_PAGES) {
@@ -85,14 +83,14 @@ uint64_t get_free_page() {
   }
 
   // TODO: do this better!
-  for (uint64_t i = 0; i <= MAX_PAGES; i++) {
+  for (uint64_t i = 1; i <= MAX_PAGES; i++) {
     if (page_free(i)) {
       last_page_used = i;
       return i;
     }
   }
   // TODO: Handle this properly.
-  panic("Out of memory");
+  panic("Out of memory.");
   return -1;
 }
 
@@ -101,10 +99,12 @@ void generate_page_mapping() {
   for (uint32_t i = 0; i < desc.chunk_count; i++) {
     struct contiguous_memory_chunk chunk = desc.chunk_ptr[i];
 
-    page_mappings[i].offset = chunk.base;
+    // don't allocate memory below 1mb.
+    page_mappings[i].offset = (chunk.base > 0x100000) ? chunk.base : 0x100000;
     page_mappings[i].page_start_index = pages_used;
     page_mappings[i].page_end_index =
-        pages_used + ((chunk.bounds - chunk.base) / PAGE_SIZE);
+        pages_used +
+        ALIGN_UP((chunk.bounds - chunk.base) / PAGE_SIZE, PAGE_SIZE);
 
     pages_used += ((chunk.bounds - chunk.base) / PAGE_SIZE) + 1;
   }
@@ -211,7 +211,8 @@ void *_pp_alloc(uint64_t page_index) {
 
 void *pp_alloc() {
   uint64_t index = get_free_page();
-  return _pp_alloc(index);
+  void *p = _pp_alloc(index);
+  return p;
 }
 
 void _pp_free(uint64_t page_index) {
@@ -242,6 +243,40 @@ void setup_pmm() {
   desc = get_memory_descriptor();
   generate_page_mapping();
 
+  uintptr_t k_phys_start = get_k_addr()->physical_base;
+  uintptr_t k_phys_end =
+      k_phys_start + ALIGN_UP(get_exe()->executable_file->size, PAGE_SIZE);
+
+  size_t k_first_page = k_phys_start / PAGE_SIZE;
+  size_t k_last_page = k_phys_end / PAGE_SIZE;
+
+  for (size_t i = k_first_page; i <= k_last_page; ++i) {
+    if (i <= MAX_PAGES) {
+      if (!page_free(i)) {
+        free_pages--;
+      }
+      set_page(i, USED);
+    }
+  }
+
+  uintptr_t bitmap_virt_start = (uintptr_t)page_bitmap;
+  uintptr_t bitmap_phys_start = bitmap_virt_start - get_k_addr()->virtual_base +
+                                get_k_addr()->physical_base;
+  uintptr_t bitmap_phys_end = bitmap_phys_start + MAX_PAGES;
+  size_t bitmap_first_page = bitmap_phys_start / PAGE_SIZE;
+  size_t bitmap_last_page = (bitmap_phys_end + PAGE_SIZE - 1) / PAGE_SIZE;
+
+  for (size_t i = bitmap_first_page; i <= bitmap_last_page; ++i) {
+    if (i <= MAX_PAGES) {
+      if (!page_free(i)) {
+        free_pages--;
+      }
+      set_page(i, USED);
+    }
+  }
+  k_debug("pages for bitmap: %d-%d, pages for kernel: %d-%d", bitmap_first_page,
+          bitmap_last_page, k_first_page, k_last_page);
+
   for (uint32_t i = 0; i < desc.chunk_count; i++) {
     k_debug("pg mp %d: addr: %p st pg: %d end pg: %d", i,
             page_mappings[i].offset, page_mappings[i].page_start_index,
@@ -252,4 +287,10 @@ void setup_pmm() {
           get_k_addr()->virtual_base);
 
   k_debug("hhdm offset %p", get_hhdm()->offset);
+
+  char *p = (void *)((uintptr_t)pp_alloc() + VMM_HIGHER_HALF);
+
+  p = "debug data";
+
+  k_debug("%s", p);
 }
