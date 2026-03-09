@@ -3,8 +3,7 @@
 #include "../util/header/log.h"
 #include "../util/header/panic.h"
 #include "../util/header/printf.h"
-#include "header/interupt_defines.h"
-#include "header/ist.h"
+#include "header/isr.h"
 
 void print_cpu_status(struct cpu_status *context) {
   printf_("Vector: %llu  Error Code: %016llx\n---\n", context->vector_number,
@@ -37,7 +36,6 @@ void unimplemented_abort(char *msg, struct cpu_status *context) {
   panic(msg);
 }
 
-// todo make these msg variants.
 void exception_handler(struct cpu_status *context) {
   send_eio();
 
@@ -83,6 +81,7 @@ void exception_handler(struct cpu_status *context) {
     break;
   case 0xD: // #GP General Protection Fault
     unimplemented_fault("General Protection Fault (#GP)", context);
+    hcf();
     break;
   case 0xE: // #PF Page Fault
     unimplemented_fault("Page Fault (#PF)", context);
@@ -91,8 +90,8 @@ void exception_handler(struct cpu_status *context) {
   case 0xF: // Reserved
     unimplemented_fault("Reserved (0xF)", context);
     break;
-  case 0x10: // #MF x87 Floating-Point Exception
-    unimplemented_fault("x87 Floating-Point Exception (#MF)", context);
+  case 0x10: // #MF x86 Floating-Point Exception
+    unimplemented_fault("x86 Floating-Point Exception (#MF)", context);
     break;
   case 0x11: // #AC Alignment Check
     unimplemented_fault("Alignment Check (#AC)", context);
@@ -129,6 +128,29 @@ void exception_handler(struct cpu_status *context) {
   case 0x1F: // Reserved
     unimplemented_fault("Reserved", context);
     break;
+  case 0x70:
+    unimplemented_fault("Syscall", context);
+    break;
+  case 0xf0:
+    unimplemented_fault("APIC Spurious Vector", context);
+    break;
+  case 0xf1:
+    unimplemented_fault("APIC Timer", context);
+    break;
+  case 0xf2:
+    unimplemented_abort("APIC Thermal Shutdown", context);
+    break;
+  case 0xf3:
+    unimplemented_fault("APIC Performance Counter", context);
+    break;
+  case 0xf4:
+  case 0xf5:
+    unimplemented_fault("APIC LINT", context);
+    break;
+  case 0xf6:
+    unimplemented_abort("APIC Fatal Error", context);
+    break;
+
   default:
     unimplemented_fault("Unknown Exception", context);
     break;

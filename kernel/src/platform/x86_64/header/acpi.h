@@ -2,7 +2,6 @@
 #define ACPI_H_
 #include <stdbool.h>
 
-
 bool setup_acpi();
 
 #endif

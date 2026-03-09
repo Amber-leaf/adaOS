@@ -3,7 +3,7 @@ section .text
 extern exception_handler
 global isr_stub_table
 
-%macro isr_no_err_stub 1
+%macro no_err 1
 global isr%1
 isr%1:
     push 0
@@ -11,7 +11,7 @@ isr%1:
     jmp exception_handler_asm
 %endmacro
 
-%macro isr_err_stub 1
+%macro err 1
 global isr%1
 isr%1:
     push %1
@@ -64,47 +64,49 @@ isr_stub_table:
 %assign i i+1 
 %endrep
 
-isr_no_err_stub 0
-isr_no_err_stub 1
-isr_no_err_stub 2
-isr_no_err_stub 3
-isr_no_err_stub 4
-isr_no_err_stub 5
-isr_no_err_stub 6
-isr_no_err_stub 7
-isr_err_stub    8
-isr_no_err_stub 9
-isr_err_stub    10
-isr_err_stub    11
-isr_err_stub    12
-isr_err_stub    13
-isr_err_stub    14
-isr_no_err_stub 15
-isr_no_err_stub 16
-isr_err_stub    17
-isr_no_err_stub 18
-isr_no_err_stub 19
-isr_no_err_stub 20
-isr_no_err_stub 21
-isr_no_err_stub 22
-isr_no_err_stub 23
-isr_no_err_stub 24
-isr_no_err_stub 25
-isr_no_err_stub 26
-isr_no_err_stub 27
-isr_no_err_stub 28
-isr_no_err_stub 29
-isr_err_stub    30
-isr_no_err_stub 31
+no_err 0
+no_err 1
+no_err 2
+no_err 3
+no_err 4
+no_err 5
+no_err 6
+no_err 7
+err    8
+no_err 9
+err    10
+err    11
+err    12
+err    13
+err    14
+no_err 15
+no_err 16
+err    17
+no_err 18
+no_err 19
+no_err 20
+no_err 21
+no_err 22
+no_err 23
+no_err 24
+no_err 25
+no_err 26
+no_err 27
+no_err 28
+no_err 29
+err    30
+no_err 31
 
-isr_no_err_stub 0xf0 ; apic spurious vector handler
+no_err 0x70 ; syscall
 
-isr_no_err_stub 0xf1 ; apic timer handler
-isr_no_err_stub 0xf2 ; apic thermal handler
-isr_no_err_stub 0xf3 ; apic performance counter handler
-isr_no_err_stub 0xf4 ; apic lint0 handler
-isr_no_err_stub 0xf5 ; apic lint1 handler
-isr_err_stub 0xf6    ; apic error handler
+no_err 0xf0 ; apic spurious vector handler
+
+no_err 0xf1 ; apic timer handler
+no_err 0xf2 ; apic thermal handler
+no_err 0xf3 ; apic performance counter handler
+no_err 0xf4 ; apic lint0 handler
+no_err 0xf5 ; apic lint1 handler
+err 0xf6    ; apic error handler
 
 
 

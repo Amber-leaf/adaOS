@@ -1,12 +1,9 @@
 #ifndef GDT_H_
 #define GDT_H_
+
 #include <stdint.h>
 
-struct TSSAddr {
-    uint64_t tss_addr;
-};
-
-struct __attribute__((packed)) GDTGDTEntry {
+typedef struct __attribute__((packed)) gdt__gdt_entry {
     uint16_t bounds_low;
     uint16_t base_low;
     uint8_t  base_mid;
@@ -14,19 +11,19 @@ struct __attribute__((packed)) GDTGDTEntry {
     uint8_t  bounds_high : 4;
     uint8_t  flags : 4;
     uint8_t  base_high;
-};
+} gtd__gdt_entry_t;
 
-union __attribute__((packed)) GDTEntry {
-    struct GDTGDTEntry gdt_gdt_entry;
-    struct TSSAddr tss_addr;
-};
+typedef union __attribute__((packed)) gdt_entry {
+    struct gdt__gdt_entry gdt_gdt_entry;
+    uintptr_t tss_addr;
+} gdt_entry_t;
 
-struct __attribute__((packed)) GDTDesc {
+struct __attribute__((packed)) gdt_r {
     uint16_t bounds;
-    uint64_t base;
+    uintptr_t base;
 };
 
-struct __attribute__ ((packed)) TSS {
+typedef struct __attribute__ ((packed)) gdt__tss_entry {
     uint32_t reserved0;
     uint64_t rsp0;
     uint64_t rsp1, rsp2;
@@ -34,11 +31,12 @@ struct __attribute__ ((packed)) TSS {
     uint64_t ist[7];
     uint64_t reserved2;
     uint16_t reserved3, io_map_base;
-};
+} gdt__tss_entry_t;
 
-extern void lgdt(struct GDTDesc* gdtd);
+extern void lgdt(struct gdt_r* gdtd);
 extern void ltr(uint16_t ltr);
 extern void reload_segments();
-extern void make_gdt();
+
+extern void setup_gdt();
 
 #endif

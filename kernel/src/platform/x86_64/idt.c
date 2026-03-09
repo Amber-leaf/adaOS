@@ -1,17 +1,18 @@
 #include "header/idt.h"
 
 #define GDT_OFFSET_KERNEL_CODE 0x8
+
 #define IDT_VECTORS 255
 
 extern void *isr_stub_table[];
 
-__attribute__((aligned(0x10))) static struct IDTEntry
+__attribute__((aligned(0x10))) static idt_entry_t
     idt[IDT_VECTORS]; // Create an array of IDT entries; aligned for performance
 
-static struct IDTDesc idtd;
+static struct idt_r idtr;
 
 void idt_set_descriptor(uint8_t index, void *isr, uint8_t flags) {
-  struct IDTEntry *descriptor = &idt[index];
+  idt_entry_t *descriptor = &idt[index];
 
   descriptor->offset_low = (uint64_t)isr & 0xFFFF;
   descriptor->selector = GDT_OFFSET_KERNEL_CODE;
@@ -22,14 +23,13 @@ void idt_set_descriptor(uint8_t index, void *isr, uint8_t flags) {
   descriptor->zero = 0;
 }
 
-void make_idt(void) {
-  idtd.base = (uintptr_t)&idt[0];
-  idtd.bounds = (uint16_t)sizeof(struct IDTDesc) * IDT_VECTORS - 1;
+void setup_idt(void) {
+  idtr.base = (uintptr_t)&idt[0];
+  idtr.bounds = (uint16_t)sizeof(struct idt_r) * IDT_VECTORS - 1;
 
   for (uint8_t vector = 0; vector < IDT_VECTORS; vector++) {
     idt_set_descriptor(vector, isr_stub_table[vector], 0x8E);
-    // vectors[vector] = true;
   }
 
-  lidt(&idtd);
+  lidt(&idtr);
 }

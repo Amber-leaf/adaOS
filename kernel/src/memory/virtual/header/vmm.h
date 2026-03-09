@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+// Page flags.
 #define PTE_PRESENT (1ull << 0)
 #define PTE_WRITABLE (1ull << 1)
 #define PTE_USER (1ull << 2)
@@ -15,11 +16,12 @@
 #define PTE_GLOBAL (1ull << 8)
 #define PTE_NX (1ull << 63)
 
+// Masks.
 #define PTE_ADDR_MASK 0x000ffffffffff000
 #define PTE_GET_ADDR(VALUE) ((VALUE) & PTE_ADDR_MASK)
 #define PTE_GET_FLAGS(VALUE) ((VALUE) & ~PTE_ADDR_MASK)
 
-typedef struct {
+typedef struct pagemap {
   uint64_t *top_level;
 } pagemap_t;
 

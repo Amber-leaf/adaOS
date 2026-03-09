@@ -1,5 +1,6 @@
 #include <stdint.h>
 
+// 8x8 kernel font.
 uint64_t font[256] = {
     0x007e464a52627e00, 0x7e81a581bd99817e, 0x7effdbffc3e7ff7e,
     0x6cfefefe7c381000, 0x10387cfe7c381000, 0x387c38fefed61038,

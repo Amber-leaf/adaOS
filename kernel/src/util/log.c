@@ -3,18 +3,23 @@
 
 #define PLAIN_TEXT_COLOUR 0xb0b0b0
 
-#define DEBUG
+#define DBG_TEXT_COLOUR 0x888888
+#define OK_TEXT_COLOUR 0x66ff66
+#define WRN_TEXT_COLOUR 0xffff66
+#define ERR_TEXT_COLOUR 0xff6666
+
+#define DBG
 #define LOG
 #define OK
-#define ERR
 #define WRN
+#define ERR
 
 void k_debug(char *format, ...) {
-#ifdef DEBUG
+#ifdef DBG
   va_list va;
   va_start(va, format);
 
-  set_text_colour(0x888888);
+  set_text_colour(DBG_TEXT_COLOUR);
   k_puts("[DBG] Kernel: ");
   vprintf(format, va);
   va_end(va);
@@ -42,7 +47,7 @@ void k_ok(char *format, ...) {
   va_start(va, format);
 
   k_puts("[");
-  set_text_colour(0x66ff66);
+  set_text_colour(OK_TEXT_COLOUR);
   k_puts("OK~");
   set_text_colour(PLAIN_TEXT_COLOUR);
   k_puts("] Kernel: ");
@@ -59,7 +64,7 @@ void k_wrn(char *format, ...) {
   va_start(va, format);
 
   k_puts("[");
-  set_text_colour(0xffff66);
+  set_text_colour(WRN_TEXT_COLOUR);
   k_puts("WRN");
   set_text_colour(PLAIN_TEXT_COLOUR);
   k_puts("] Kernel: ");

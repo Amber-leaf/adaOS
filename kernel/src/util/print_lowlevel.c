@@ -160,7 +160,7 @@ void k_puti(uint32_t n) {
 
     uint64_t char_bitmap = font[digit];
     if (digit > 57 || digit < 48)
-      char_bitmap = MISSING; // Missing char
+      char_bitmap = MISSING;
 
     print_bitmap(char_bitmap, calculate_x(), calculate_y());
 

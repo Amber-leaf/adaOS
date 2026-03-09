@@ -1,10 +1,9 @@
 #ifndef PORT_H_
 #define PORT_H_
 
-
 #include <stdint.h>
 
-void outb(unsigned short port, unsigned char val);
-unsigned char inb(unsigned short port);
+void outb(uint16_t port, uint8_t val);
+uint8_t inb(uint16_t port);
 
 #endif

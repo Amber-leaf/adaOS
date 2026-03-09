@@ -14,11 +14,11 @@ ltr: ; load the task register to say we support multitasking and that out TSS is
 
 reload_segments:
    push 0x08
-   lea rax, [rel reload_CS]
+   lea rax, [rel reload_cs]
    push rax
    retfq
 
-reload_CS:
+reload_cs:
    mov ax, 0x10
    mov ds, ax
    mov es, ax

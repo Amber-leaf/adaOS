@@ -1,10 +1,9 @@
 #ifndef IDT_H_
 #define IDT_H_
 
-
 #include <stdint.h>
 
-struct __attribute__((packed)) IDTEntry {
+typedef struct __attribute__((packed)) idt_entry {
     uint16_t offset_low;
     uint16_t selector;
     uint8_t  ist;
@@ -12,15 +11,15 @@ struct __attribute__((packed)) IDTEntry {
     uint16_t offset_mid;
     uint32_t offset_high;
     uint32_t zero;
-};
+} idt_entry_t;
 
-struct __attribute__((packed)) IDTDesc {
+struct __attribute__((packed)) idt_r {
     uint16_t bounds;
-    uint64_t base;
+    uintptr_t base;
 };
 
-extern void lidt(struct IDTDesc* idtd);
+extern void lidt(struct idt_r* idtd);
 
-extern void make_idt();
+extern void setup_idt();
 
 #endif

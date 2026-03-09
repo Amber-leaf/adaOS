@@ -4,27 +4,34 @@
 #include <stdint.h>
 #include "../../header/limine.h"
 
-#define VMM_HIGHER_HALF (get_hhdm()->offset)
+#define PAGE_SIZE 4096
+
+#define MAX_PAGES 1024 * 1024
+
+#define HIGHER_HALF (get_hhdm()->offset)
 
 #define ALIGN_UP(value, align) (((value) + (align) - 1) & ~((align) - 1))
 
+#define MAX_SEGMENTS 32
 #define MAX_CHUNKS 128
 
-struct contiguous_memory_chunk {
+typedef struct contiguous_memory_chunk {
     uint64_t base;
     uint64_t bounds;
-};
+} contiguous_memory_chunk_t;
 
-struct memory_descriptor {
+typedef struct memory_descriptor {
     uint64_t length;
     uint8_t chunk_count;
     struct contiguous_memory_chunk *chunk_ptr;
-};
+} memory_descriptor_t;
 
-struct limine_memmap_response *get_memmap(void);
 void print_free_ram();
 void debug_print_mem_map();
-struct memory_descriptor get_memory_descriptor();
+
+memory_descriptor_t get_memory_descriptor();
+
+struct limine_memmap_response *get_memmap(void);
 struct limine_executable_address_response *get_k_addr(void);
 struct limine_hhdm_response *get_hhdm(void);
 struct limine_executable_file_response *get_exe(void);

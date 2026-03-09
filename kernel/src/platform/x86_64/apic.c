@@ -6,9 +6,9 @@
 
 #define IA32_APIC_BASE_MSR 0x1B
 
-struct LocalAPICData apic;
+struct local_apic_r apic;
 
-struct LocalAPICData get_apic() {
+struct local_apic_r get_apic() {
   uint64_t data = read_msr(IA32_APIC_BASE_MSR);
 
   k_debug("apic data: %016lx", data);
@@ -42,7 +42,7 @@ void write_lvt_entry(uint32_t *ptr, uint8_t IDT_entry) {
 }
 
 void setup_apic() {
-  struct LocalAPICData apic = get_apic();
+  struct local_apic_r apic = get_apic();
   void *apic_ptr = (void *)(uintptr_t)apic.apic_address;
   uint32_t *apic_spurious_vec_ptr = apic_ptr + 0xF0;
   uint32_t *apic_id_ptr = apic_ptr + 0x20;

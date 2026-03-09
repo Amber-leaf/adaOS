@@ -9,6 +9,8 @@
  * @param buf       Output buffer (must be at least 25 bytes)
  * @param buf_size  Size of the output buffer
  * @return          0 on success, -1 on error
+ *
+ * Adapted from http://howardhinnant.github.io/date_algorithms.html.
  */
 int ms_to_iso8601(int64_t ms_epoch, char *buf, size_t buf_size) {
   if (!buf || buf_size < 25)
@@ -39,7 +41,6 @@ int ms_to_iso8601(int64_t ms_epoch, char *buf, size_t buf_size) {
   /*
    * Civil date from days since epoch.
    * Algorithm: http://howardhinnant.github.io/date_algorithms.html
-   * "days_from_civil" / "civil_from_days"  (public domain)
    */
   days += 719468LL; /* shift epoch to 0000-03-01 */
   int64_t era = (days >= 0 ? days : days - 146096) / 146097;
@@ -55,5 +56,6 @@ int ms_to_iso8601(int64_t ms_epoch, char *buf, size_t buf_size) {
 
   snprintf(buf, buf_size, "%04d-%02d-%02dT%02d:%02d:%02d.%03dZ", (int)y,
            (int)mon, (int)day, (int)hr, (int)min, (int)sec, (int)ms);
+
   return 0;
 }

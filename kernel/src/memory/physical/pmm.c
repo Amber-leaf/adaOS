@@ -6,28 +6,25 @@
 #include "../../util/header/panic.h"
 
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 
 #define USED false
 #define FREE true
 
-#define MAX_SEGMENTS 32
+static uint8_t page_bitmap[MAX_PAGES / 8]; // if set then used
 
-uint8_t page_bitmap[MAX_PAGES / 8]; // if set then used
+static struct page_mapping page_mappings[MAX_SEGMENTS];
 
-struct page_mapping page_mappings[MAX_SEGMENTS];
+static uint32_t last_used_mapping = 0;
 
-uint32_t last_used_mapping = 0;
+static uint64_t last_page_used = 1;
 
-uint32_t mapped_in_segment = 0;
+static uint64_t free_pages = MAX_PAGES;
 
-uint64_t last_page_used = 1;
+static uint64_t used_pages = 0;
 
-uint64_t free_pages = MAX_PAGES;
-
-uint64_t used_pages = 0;
-
-struct memory_descriptor desc;
+static memory_descriptor_t desc;
 
 uint64_t get_used_memory() {
   uint64_t used = used_pages;
@@ -40,7 +37,7 @@ uint64_t get_free_memory() {
 }
 
 // check whether a physical page is free, see pp_free() for deallocating.
-bool page_free(uint64_t page_index) {
+static bool page_free(uint64_t page_index) {
   uint64_t byte = page_index / 8;
   uint8_t bit = page_index % 8;
 
@@ -51,7 +48,7 @@ bool page_free(uint64_t page_index) {
   return true;
 }
 
-void set_page(uint64_t page_index, bool free) {
+static void set_page(uint64_t page_index, bool free) {
   uint64_t byte = page_index / 8;
   uint8_t bit = page_index % 8;
 
@@ -60,7 +57,6 @@ void set_page(uint64_t page_index, bool free) {
     free_pages++;
     used_pages--;
   } else {
-    // k_debug("physical page %d allocated", page_index);
     page_bitmap[byte] |= (1 << bit);
     last_page_used = page_index;
     free_pages--;
@@ -70,12 +66,12 @@ void set_page(uint64_t page_index, bool free) {
 
 // get the "best" free page's index
 uint64_t get_free_page() {
-  if (last_page_used >= get_k_addr()->physical_base) {
+  if (last_page_used >= (get_k_addr()->physical_base) / PAGE_SIZE) {
     last_page_used = 1;
   }
 
   if (last_page_used >= MAX_PAGES) {
-    last_page_used = MAX_PAGES - 1;
+    last_page_used = 1;
   }
 
   if (page_free(last_page_used++)) {
@@ -96,8 +92,9 @@ uint64_t get_free_page() {
 
 void generate_page_mapping() {
   uint64_t pages_used = 0;
-  for (uint32_t i = 0; i < desc.chunk_count; i++) {
-    struct contiguous_memory_chunk chunk = desc.chunk_ptr[i];
+
+  for (size_t i = 0; i < desc.chunk_count; i++) {
+    contiguous_memory_chunk_t chunk = desc.chunk_ptr[i];
 
     // don't allocate memory below 1mb.
     page_mappings[i].offset = (chunk.base > 0x100000) ? chunk.base : 0x100000;
@@ -111,7 +108,7 @@ void generate_page_mapping() {
 }
 
 uint64_t ptr_to_page(void *ptr) {
-  struct page_mapping mapping;
+  page_mapping_t mapping;
   bool wrapped = false;
 
   if (ptr == NULL) {
@@ -120,7 +117,7 @@ uint64_t ptr_to_page(void *ptr) {
   }
 
   if ((uint64_t)ptr % PAGE_SIZE != 0) {
-    k_err("Non-page alined pointer passed to ptr_to_page!");
+    k_err("Non page-alined pointer passed to ptr_to_page!");
     return -1;
   }
 
@@ -151,7 +148,12 @@ retry:
 }
 
 void *page_to_ptr(uint64_t page_index) {
-  struct page_mapping mapping;
+  if (page_index > MAX_PAGES) {
+    k_err("Out of bounds page %d passed to page_to_ptr!", page_index);
+    return NULL;
+  }
+
+  page_mapping_t mapping;
   bool wrapped = false;
 
 retry:
@@ -181,14 +183,14 @@ retry:
 
 void *_pp_alloc(uint64_t page_index) {
   if (page_index >= get_k_addr()->physical_base) {
-    k_err("tried to allocate a page (%d) that was in the kernel executable's "
+    k_err("Tried to allocate a page (%d) that was in the kernel executable's "
           "space!",
           page_index);
     return NULL;
   }
 
   if (page_index > MAX_PAGES) {
-    k_err("tried to allocate physical page %d at %p that was outside the "
+    k_err("Tried to allocate physical page %d at %p that was outside the "
           "bounds of paged memory!",
           page_index, page_to_ptr(page_index));
     return NULL;
@@ -199,13 +201,13 @@ void *_pp_alloc(uint64_t page_index) {
 
     void *addr = page_to_ptr(page_index);
 
-    void *vaddr = (void *)((uintptr_t)addr + VMM_HIGHER_HALF);
+    void *vaddr = (void *)((uintptr_t)addr + HIGHER_HALF);
 
     memset(vaddr, 0, PAGE_SIZE);
 
     return addr;
   }
-  k_wrn("tried to allocate a page (%d) that was not free!", page_index);
+  k_wrn("Tried to allocate a page (%d) that was not free!", page_index);
   return NULL;
 }
 
@@ -288,7 +290,7 @@ void setup_pmm() {
 
   k_debug("hhdm offset %p", get_hhdm()->offset);
 
-  char *p = (void *)((uintptr_t)pp_alloc() + VMM_HIGHER_HALF);
+  char *p = (void *)((uintptr_t)pp_alloc() + HIGHER_HALF);
 
   p = "debug data";
 

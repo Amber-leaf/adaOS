@@ -57,7 +57,7 @@ struct limine_executable_address_response *get_k_addr(void) {
 struct limine_hhdm_response *get_hhdm(void) {
   struct limine_hhdm_response *hhdm = hhdm_request.response;
   if (hhdm == NULL) {
-    panic("No hhdm response!");
+    panic("No HHDM response!");
   }
 
   return hhdm;
@@ -81,14 +81,14 @@ bool is_memory_free(int type) {
 struct memory_descriptor get_memory_descriptor() {
   struct limine_memmap_response *memmap = get_memmap();
 
-  struct memory_descriptor desc;
-  static struct contiguous_memory_chunk free_chunks[MAX_CHUNKS];
-  uint8_t found_chunks = 0;
+  memory_descriptor_t desc;
+  static contiguous_memory_chunk_t free_chunks[MAX_CHUNKS];
+  size_t found_chunks = 0;
   desc.length = 0;
 
   for (uint64_t i = 0; i < memmap->entry_count; i++) {
     uint64_t type = memmap->entries[i]->type;
-    uint64_t base = memmap->entries[i]->base;
+    uintptr_t base = memmap->entries[i]->base;
     uint64_t length = memmap->entries[i]->length;
 
     if (is_memory_free(type)) {
@@ -119,7 +119,7 @@ void debug_print_mem_map() {
 
   for (uint64_t i = 0; i < memmap->entry_count; i++) {
     uint64_t type = memmap->entries[i]->type;
-    uint64_t base = memmap->entries[i]->base;
+    uintptr_t base = memmap->entries[i]->base;
     uint64_t length = memmap->entries[i]->length;
 
     k_debug("seg %d: type: %s. base: %p.\nlength: %p. free: %d", i,
@@ -129,11 +129,9 @@ void debug_print_mem_map() {
 }
 
 void print_free_ram() {
-  struct memory_descriptor desc = get_memory_descriptor();
+  memory_descriptor_t desc = get_memory_descriptor();
 
   uint64_t length = desc.length;
-
-  uint32_t length_gib = length / 1073741824;
 
   uint64_t gib = length / 1073741824;
   uint64_t remainder = length % 1073741824;
@@ -141,10 +139,8 @@ void print_free_ram() {
   uint64_t decimal = (remainder * 100) / 1073741824;
   k_log("%d.%02d GiB RAM free.", gib, decimal);
 
-  if (length_gib < 0.5) {
+  if (gib < 1 && decimal < 50) {
     panic("Insufficient memory. adaOS probably needs \nmore than 0.5GiB of "
           "memory free.");
   }
-
-  debug_print_mem_map();
 }

@@ -13,6 +13,7 @@
 #include "platform/x86_64/header/pic.h"
 #include "util/header/date.h"
 #include "util/header/log.h"
+#include "util/header/panic.h"
 #include "util/header/print_lowlevel.h"
 #include "util/header/printf.h"
 
@@ -107,8 +108,6 @@ int memcmp(const void *s1, const void *s2, size_t n) {
   return 0;
 }
 
-static char *version_string = "0.0.2";
-
 // Halt and catch fire function.
 void hcf(void) {
   for (;;) {
@@ -127,13 +126,15 @@ struct limine_framebuffer *get_framebuffer(void) {
   return framebuffer_request.response->framebuffers[0];
 }
 
-int64_t get_bootime(void) {
+int64_t get_boot_time(void) {
   if (bootime_request.response == NULL) {
     k_err("Could not get time at boot!");
   }
 
   return bootime_request.response->timestamp;
 }
+
+static char *version_string = "0.0.3";
 
 void print_banner(void) {
   set_text_colour(0xe6a6a1);
@@ -145,8 +146,9 @@ void print_banner(void) {
   set_skew(0);
 
   set_text_colour(0xe0e0e0);
+
   char ts[25];
-  ms_to_iso8601(get_bootime() * 1000, ts, sizeof(ts));
+  ms_to_iso8601(get_boot_time() * 1000, ts, sizeof(ts));
 
   printf_("The date is %s.\n\n", ts);
   printf_("Copyright (C) 2026 Ambersoft Technologies.\n");
@@ -168,20 +170,18 @@ void kmain(void) {
   print_banner();
 
   if (!check_CPUID()) {
-    k_err("CPUID not Supported!");
-    hcf();
+    panic("CPUID not Supported!");
   }
 
   if (!check_long_mode()) {
-    k_err("Long Mode not Supported!");
-    hcf();
+    panic("Long Mode not Supported!");
   }
 
-  make_gdt();
+  setup_gdt();
 
   k_ok("GDT Init");
 
-  make_idt();
+  setup_idt();
 
   k_ok("IDT Init");
 

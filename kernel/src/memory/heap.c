@@ -16,13 +16,13 @@
 #define ALIGN_UP_HEAP(size)                                                    \
   (((size) + HEAP_ALIGNMENT - 1) & ~(HEAP_ALIGNMENT - 1))
 
-#define KERNEL_HEAP_START VMM_HIGHER_HALF + 0x10000000000
+#define KERNEL_HEAP_START HIGHER_HALF + 0x10000000000
 #define INITIAL_HEAP_PAGES 256
 #define KERNEL_HEAP_INITIAL_SIZE (INITIAL_HEAP_PAGES * PAGE_SIZE)
 
 void *heap_start = NULL;
 size_t heap_size = 0;
-struct heap_free_block *free_list_head = NULL;
+heap_free_block_t *free_list_head = NULL;
 
 int heap_grow_pages(size_t pages) {
   if (pages == 0)
@@ -45,15 +45,15 @@ int heap_grow_pages(size_t pages) {
     }
   }
 
-  struct heap_free_block *new_block = (struct heap_free_block *)base;
+  heap_free_block_t *new_block = (heap_free_block_t *)base;
   new_block->size = new_region_size;
   new_block->next = NULL;
 
   if (!free_list_head) {
     free_list_head = new_block;
   } else {
-    struct heap_free_block *next_block = NULL;
-    struct heap_free_block *head_block = free_list_head;
+    heap_free_block_t *next_block = NULL;
+    heap_free_block_t *head_block = free_list_head;
     while (head_block && (uintptr_t)head_block < base) {
       next_block = head_block;
       head_block = head_block->next;
@@ -85,7 +85,7 @@ int heap_grow_pages(size_t pages) {
 void heap_dump(void) {
   k_debug("Heap dump: start=%p size=%lX free-list:", (uint64_t)heap_start,
           heap_size);
-  for (struct heap_free_block *b = free_list_head; b; b = b->next) {
+  for (heap_free_block_t *b = free_list_head; b; b = b->next) {
     k_debug("block %lX size=%lX next=%p", (uint64_t)b, b->size, b->next);
   }
 }
@@ -100,15 +100,15 @@ void *kmalloc(size_t size) {
   if (total_size < MIN_ALLOC_SIZE)
     total_size = MIN_ALLOC_SIZE;
 
-  struct heap_free_block *previous_block = NULL;
-  struct heap_free_block *current_block = free_list_head;
+  heap_free_block_t *previous_block = NULL;
+  heap_free_block_t *current_block = free_list_head;
 
 retry_search:
   while (current_block) {
     if (current_block->size >= total_size) {
       if (current_block->size >= total_size + MIN_ALLOC_SIZE) {
-        struct heap_free_block *new_block =
-            (struct heap_free_block *)((uintptr_t)current_block + total_size);
+        heap_free_block_t *new_block =
+            (heap_free_block_t *)((uintptr_t)current_block + total_size);
         new_block->size = current_block->size - total_size;
         new_block->next = current_block->next;
 
@@ -172,14 +172,14 @@ void kfree(void *ptr) {
     return;
   }
 
-  struct heap_free_block *previous_block = NULL;
-  struct heap_free_block *current_block = free_list_head;
+  heap_free_block_t *previous_block = NULL;
+  heap_free_block_t *current_block = free_list_head;
   while (current_block && (uintptr_t)current_block < (uintptr_t)block_start) {
     previous_block = current_block;
     current_block = current_block->next;
   }
 
-  struct heap_free_block *freed_block = (struct heap_free_block *)block_start;
+  heap_free_block_t *freed_block = (heap_free_block_t *)block_start;
   freed_block->size = block_size;
 
   if (previous_block == NULL) {
@@ -205,8 +205,10 @@ void kfree(void *ptr) {
 void *kcalloc(size_t num, size_t size) {
   if (size != 0 && num > (SIZE_MAX / size))
     return NULL;
+
   size_t total = num * size;
   void *p = kmalloc(total);
+
   if (p)
     memset(p, 0, total);
   return p; // Will be NULL if size = 0 (kmalloc(0) -> NULL)
@@ -215,6 +217,7 @@ void *kcalloc(size_t num, size_t size) {
 void *krealloc(void *ptr, size_t new_size) {
   if (!ptr)
     return kmalloc(new_size);
+
   if (new_size == 0) {
     kfree(ptr);
     return NULL;
@@ -227,10 +230,13 @@ void *krealloc(void *ptr, size_t new_size) {
     return ptr;
 
   void *new_ptr = kmalloc(new_size);
+
   if (!new_ptr)
     return NULL;
+
   memcpy(new_ptr, ptr, old_payload);
   kfree(ptr);
+
   return new_ptr;
 }
 
@@ -244,9 +250,7 @@ void setup_heap() {
     panic("setup_heap: failed to allocate initial kernel heap!");
   }
 
-  free_list_head = (struct heap_free_block *)heap_start;
+  free_list_head = (heap_free_block_t *)heap_start;
   free_list_head->size = heap_size;
   free_list_head->next = NULL;
-
-  heap_dump();
 }
