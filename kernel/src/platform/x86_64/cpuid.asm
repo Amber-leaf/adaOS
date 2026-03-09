@@ -1,15 +1,12 @@
 bits 32
 
-global check_CPUID
-global check_long_mode
+global check_cpuid
 
 EFLAGS_ID          equ (1 << 21)
-CPUID_EXTENSIONS   equ 0x80000000
-CPUID_EXT_FEATURES equ 0x80000001
 
 section .text
 
-check_CPUID:
+check_cpuid:
     pushfd
     pop eax
     mov ecx, eax
@@ -22,13 +19,5 @@ check_CPUID:
     popfd
     xor eax, ecx
     setnz al
-    movzx eax, al
-    ret
-
-check_long_mode:
-    mov eax, CPUID_EXTENSIONS
-    cpuid
-    cmp eax, CPUID_EXT_FEATURES
-    setae al
     movzx eax, al
     ret

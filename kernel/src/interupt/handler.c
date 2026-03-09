@@ -1,9 +1,12 @@
 #include "../header/core.h"
 #include "../platform/x86_64/header/apic.h"
+#include "../platform/x86_64/header/port.h"
 #include "../util/header/log.h"
 #include "../util/header/panic.h"
 #include "../util/header/printf.h"
+
 #include "header/isr.h"
+#include "header/pit_handler.h"
 
 void print_cpu_status(struct cpu_status *context) {
   printf_("Vector: %llu  Error Code: %016llx\n---\n", context->vector_number,
@@ -37,7 +40,9 @@ void unimplemented_abort(char *msg, struct cpu_status *context) {
 }
 
 void exception_handler(struct cpu_status *context) {
-  send_eio();
+  if (context->vector_number > 0xf0) {
+    send_eio();
+  }
 
   switch (context->vector_number) {
   case 0x0: // #DE Division Error
@@ -128,6 +133,10 @@ void exception_handler(struct cpu_status *context) {
   case 0x1F: // Reserved
     unimplemented_fault("Reserved", context);
     break;
+  case 0x20:
+    k_debug("PIT");
+    pit_irq();
+    break;
   case 0x70:
     unimplemented_fault("Syscall", context);
     break;
@@ -155,4 +164,6 @@ void exception_handler(struct cpu_status *context) {
     unimplemented_fault("Unknown Exception", context);
     break;
   }
+
+  outb(0x20, 0x20);
 }

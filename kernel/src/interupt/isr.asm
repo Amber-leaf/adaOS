@@ -3,6 +3,16 @@ section .text
 extern exception_handler
 global isr_stub_table
 
+global isr_0x20
+global isr_0x70
+global isr_0xf0
+global isr_0xf1
+global isr_0xf2
+global isr_0xf3
+global isr_0xf4
+global isr_0xf5
+global isr_0xf6
+
 %macro no_err 1
 global isr%1
 isr%1:
@@ -97,15 +107,34 @@ no_err 29
 err    30
 no_err 31
 
+isr_0x20:
+no_err 0x20 ; pit
+
+isr_0x70:
+
 no_err 0x70 ; syscall
 
+isr_0xf0:
+
 no_err 0xf0 ; apic spurious vector handler
+isr_0xf1:
 
 no_err 0xf1 ; apic timer handler
+isr_0xf2:
+
 no_err 0xf2 ; apic thermal handler
+isr_0xf3:
+
 no_err 0xf3 ; apic performance counter handler
+isr_0xf4:
+
+
 no_err 0xf4 ; apic lint0 handler
+isr_0xf5:
+
 no_err 0xf5 ; apic lint1 handler
+isr_0xf6:
+
 err 0xf6    ; apic error handler
 
 

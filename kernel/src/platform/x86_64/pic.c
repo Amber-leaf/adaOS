@@ -1,3 +1,4 @@
+#include "../../util/header/log.h"
 #include "header/port.h"
 
 #define PIC1_COMMAND 0x20
@@ -11,6 +12,24 @@
 #define ICW2_S 0x28
 
 #define ICW4_8086 0x01
+
+void unmask_irq(uint8_t irq) {
+  uint16_t port;
+  uint8_t value;
+
+  if (irq < 8) {
+    port = PIC1_DATA;
+  } else {
+    port = PIC2_DATA;
+    irq -= 8;
+  }
+
+  value = inb(port);
+
+  value &= ~(1 << irq);
+
+  outb(port, value);
+}
 
 void setup_pic() {
   __asm__ __volatile__("cli");

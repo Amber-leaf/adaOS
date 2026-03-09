@@ -37,13 +37,18 @@ struct local_apic_r get_apic() {
   return apic;
 }
 
-void write_lvt_entry(uint32_t *ptr, uint8_t idt_index) {
+void write_lvt_entry(uintptr_t offset, uint8_t idt_index) {
+  uint32_t *ptr = ((uint32_t *)(apic_virt + offset));
   ptr[0] = idt_index;
-  ptr[8] = 0b000;
-  ptr[11] = 0;
-  ptr[13] = 3;
-  ptr[15] = 0;
-  ptr[16] = 1;
+  ptr[8] = 0b000001101;
+}
+
+void write_register(uintptr_t offset, uint32_t value) {
+  ((volatile uint32_t *)(apic_virt + offset))[0] = value;
+}
+
+uint32_t read_register(uintptr_t offset) {
+  return ((volatile uint32_t *)(apic_virt + offset))[0];
 }
 
 void bootstrap_apic() {
@@ -55,50 +60,27 @@ void bootstrap_apic() {
   apic_virt = (uint64_t)apic.apic_address + HIGHER_HALF;
 
   if (!map_page(apic_virt, (uintptr_t)apic.apic_address,
-                PTE_WRITABLE | PTE_NX)) {
+                PTE_WRITABLE | PTE_NX | PTE_PCD)) {
     panic("Could not map APIC to virtual memory!");
   }
 
-  uintptr_t apic_spurious_vec_ptr = apic_virt + 0xF0;
-  uintptr_t apic_id_ptr = apic_virt + 0x20;
-  uintptr_t apic_ver_ptr = apic_virt + 0x30;
+  k_debug("apic version: %X", read_register(APIC_VERSION));
 
-  k_debug("apic_spurious_vec_ptr at %p", apic_spurious_vec_ptr);
-  k_debug("apic_id_ptr at %p", apic_id_ptr);
-  k_debug("apic_ver_ptr at %p", apic_ver_ptr);
+  if (read_register(APIC_VERSION) < 0x10) {
+    panic("82489DX (APIC versions under 0x10) are unsupported.");
+  }
 
-  k_debug("apic supposed ver: %X", ((uint32_t *)(apic_ver_ptr))[0]);
+  write_register(APIC_SPURIOUS_INT_VECTOR, 0x1F0);
 
-  //
-  // k_debug("apic version: %x", apic_ver_ptr);
-  //
-  // if (apic_ver_ptr < (uint32_t *)0x10) {
-  //  panic("82489DX is unsupported");
-  //}
-  //
-  // apic_spurious_vec_ptr[0] = 0xF0;
-  // apic_spurious_vec_ptr[8] = 1;
-  //
-  // if (!apic_spurious_vec_ptr[8]) {
-  //  panic("Could not enable to APIC!");
-  //}
-  //
-  // k_debug("APIC id: 0x%x", *apic_id_ptr);
-  //
-  // uint32_t *apic_timer_lvt_ptr = apic_ptr + 0x320; // todo
-  // uint32_t *apic_thermal_lvt_ptr = apic_ptr + 0x330;
-  // uint32_t *apic_performance_counter_ptr =
-  //    apic_ptr + 0x340; // tf is a performance counter? idk
-  // uint32_t *apic_lint0_lvt_ptr = apic_ptr + 0x350; // todo
-  // uint32_t *apic_lint1_lvt_ptr = apic_ptr + 0x360; // todo
-  // uint32_t *apic_error_lvt_ptr = apic_ptr + 0x370;
-  //
-  // write_lvt_entry(apic_thermal_lvt_ptr, 0xf2);
-  // write_lvt_entry(apic_error_lvt_ptr, 0xf6);
+  if (read_register(APIC_SPURIOUS_INT_VECTOR) != 0x1F0) {
+    panic("Could not enable APIC!");
+  }
+
+  k_debug("apic id: 0x%x", read_register(APIC_ID));
+
+  write_lvt_entry(APIC_LVT_THERMAL, 0xf2);
+
+  write_lvt_entry(APIC_LVT_ERROR, 0xf6);
 }
 
-void send_eio() {
-  uintptr_t eoi_ptr = apic_virt + 0xB0;
-
-  ((uint32_t *)(eoi_ptr))[0] = 0;
-}
+void send_eio() { write_register(APIC_EOI, 0); }

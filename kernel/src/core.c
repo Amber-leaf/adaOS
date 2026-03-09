@@ -11,6 +11,7 @@
 #include "platform/x86_64/header/idt.h"
 #include "platform/x86_64/header/msr.h"
 #include "platform/x86_64/header/pic.h"
+#include "platform/x86_64/header/pit.h"
 #include "util/header/date.h"
 #include "util/header/log.h"
 #include "util/header/panic.h"
@@ -159,14 +160,14 @@ void print_banner(void) {
   printf_("Notice: Due to recent California and Colorado laws requiring age "
           "verification\nfor all OS's, adaOS is not licensed for"
           " use in California or Colorado.\nPlease, complain to your local "
-          "representatives!\n");
+          "representatives! (see "
+          "https://www.house.gov/representatives/find-your-representative)\n");
 
   set_text_colour(0xffffff);
 
   printf_("See LICENCE in the source directory for details.\n");
 
   print_free_ram();
-  crlf();
 }
 
 // Main boot entrypoint.
@@ -180,13 +181,13 @@ void kmain(void) {
 
   print_banner();
 
-  if (!check_CPUID()) {
+  if (!check_cpuid()) {
     panic("CPUID not Supported!");
   }
+  k_log("CPU info: %s (%s).\nHypervisor: %s", get_cpu_name(), get_cpu_vendor(),
+        get_hypervisor_vendor());
 
-  if (!check_long_mode()) {
-    panic("Long Mode not Supported!");
-  }
+  crlf();
 
   setup_gdt();
 
@@ -201,7 +202,7 @@ void kmain(void) {
   if (read_msr(IA32_EFER) != 0xd01) {
     k_test_fail("IA32_EFER Error: could not set IA_32e mode");
   }
-  k_test_pass("IA32_EFER");
+  k_test_pass("IA32_EFER"); // TODO: write more tests.
 
   setup_pmm();
 
@@ -217,7 +218,13 @@ void kmain(void) {
 
   setup_pic();
 
-  k_ok("Disabled PIC");
+  k_ok("Setup PIC");
+
+  setup_pit();
+
+  k_ok("Setup PIT as Bootstrap Timer");
+
+  hcf();
 
   bootstrap_apic();
 
@@ -230,6 +237,5 @@ void kmain(void) {
   }
 
   k_log("Halt");
-
   hcf();
 }

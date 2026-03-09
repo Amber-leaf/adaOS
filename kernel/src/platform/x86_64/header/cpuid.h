@@ -1,8 +1,20 @@
 #ifndef CPUID_H_
 #define CPUID_H_
 #include <stdbool.h>
+#include <stdint.h>
 
-extern bool check_CPUID();
-extern bool check_long_mode();
+typedef struct cpuid_regs {
+    uint32_t eax;
+    uint32_t ebx;
+    uint32_t ecx;
+    uint32_t edx;
+} cpuid_regs_t;
+
+extern bool check_cpuid();
+
+char* get_cpu_vendor();
+char* get_cpu_name();
+
+char* get_hypervisor_vendor();
 
 #endif

@@ -36,6 +36,8 @@ void make_tts_gdt_entry(int index) {
 }
 
 void setup_gdt() {
+  tss.io_map_base = 0xFFFF;
+
   make_gdt_entry(0, 0, 0);
   make_gdt_entry(1, 0x9A, 0xA); // kernel, rwx, 64bit
   make_gdt_entry(2, 0x92, 0xC); // kernel, rw, 64bit
@@ -52,7 +54,7 @@ void setup_gdt() {
   gdtr.bounds = sizeof(gdt) - 1;
   gdtr.base = (uint64_t)&gdt;
 
-  // acctualy load the GDT.
+  // actually load the GDT.
   lgdt(&gdtr);
 
   reload_segments();
