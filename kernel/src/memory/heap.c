@@ -8,6 +8,7 @@
 #include "./virtual/header/vmm.h"
 #include "header/memmap.h"
 #include "physical/header/pmm.h"
+#include <stdint.h>
 
 #define MIN_ALLOC_SIZE sizeof(struct heap_free_block)
 #define HEAP_ALIGNMENT 16

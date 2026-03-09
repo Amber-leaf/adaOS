@@ -4,6 +4,7 @@
 #include "memory/header/memmap.h"
 #include "memory/physical/header/pmm.h"
 #include "memory/virtual/header/vmm.h"
+#include "platform/x86_64/header/acpi.h"
 #include "platform/x86_64/header/apic.h"
 #include "platform/x86_64/header/cpuid.h"
 #include "platform/x86_64/header/gdt.h"
@@ -36,6 +37,7 @@ __attribute__((
     section(
         ".limine_requests"))) static volatile struct limine_framebuffer_request
     framebuffer_request = {.id = LIMINE_FRAMEBUFFER_REQUEST, .revision = 0};
+
 __attribute__((
     used,
     section(
@@ -200,6 +202,12 @@ void kmain(void) {
   setup_heap();
 
   k_ok("Setup Heap");
+
+  if (setup_acpi()) {
+    k_ok("Setup ACPI");
+  } else {
+    k_err("APIC Setup Failed! Things may break!");
+  }
 
   // setup_pic();
 
