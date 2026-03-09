@@ -26,7 +26,7 @@ uint64_t *get_next_level(uint64_t *current_level_virt, size_t index) {
     return (uint64_t *)(PTE_GET_ADDR(entry) + VMM_HIGHER_HALF);
   }
 
-  k_err("No next paging level, but was asked to get it anyway!");
+  k_wrn("No next paging level, but was asked to get it anyway!");
   return NULL;
 }
 

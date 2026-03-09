@@ -2,6 +2,8 @@
 #define VMM_H_
 
 #include <stdint.h>
+#include <stdbool.h>
+
 #define PTE_PRESENT (1ull << 0)
 #define PTE_WRITABLE (1ull << 1)
 #define PTE_USER (1ull << 2)
@@ -22,5 +24,6 @@ typedef struct {
 } pagemap_t;
 
 void setup_vmm();
+bool map_page(uintptr_t virt_addr, uintptr_t phys_addr, uint64_t flags);
 
 #endif

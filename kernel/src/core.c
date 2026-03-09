@@ -1,5 +1,6 @@
 #include "header/core.h"
 #include "header/limine.h"
+#include "memory/header/heap.h"
 #include "memory/header/memmap.h"
 #include "memory/physical/header/pmm.h"
 #include "memory/virtual/header/vmm.h"
@@ -195,6 +196,10 @@ void kmain(void) {
   setup_vmm();
 
   k_ok("Setup VMM");
+
+  setup_heap();
+
+  k_ok("Setup Heap");
 
   // setup_pic();
 
