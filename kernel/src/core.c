@@ -224,6 +224,12 @@ void kmain(void) {
 
   k_ok("Setup PIT as Bootstrap Timer");
 
+  k_log("sleep");
+
+  pit_sleep_ms(10000);
+
+  k_log("resume");
+
   hcf();
 
   bootstrap_apic();

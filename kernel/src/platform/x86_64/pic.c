@@ -1,4 +1,3 @@
-#include "../../util/header/log.h"
 #include "header/port.h"
 
 #define PIC1_COMMAND 0x20

@@ -134,7 +134,6 @@ void exception_handler(struct cpu_status *context) {
     unimplemented_fault("Reserved", context);
     break;
   case 0x20:
-    k_debug("PIT");
     pit_irq();
     break;
   case 0x70:

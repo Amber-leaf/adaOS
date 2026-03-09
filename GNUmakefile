@@ -2,7 +2,7 @@
 .SUFFIXES:
 
 # Default user QEMU flags. These are appended to the QEMU command calls.
-QEMUFLAGS := -m 2G -M accel=tcg,smm=off -d int -no-reboot -no-shutdown
+QEMUFLAGS := -m 2G -M accel=tcg,smm=off -no-reboot -no-shutdown # -d int
 
 override IMAGE_NAME := adaOS
 

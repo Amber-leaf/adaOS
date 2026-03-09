@@ -1,6 +1,9 @@
 #include "header/pit.h"
+#include "../../interupt/header/pit_handler.h"
+
 #include "header/pic.h"
 #include "header/port.h"
+
 #include <stddef.h>
 
 #define PIT_CHANNEL0_PORT 0x40
@@ -10,7 +13,23 @@
 
 #define PIT_GOAL_FREQUENCY 1000 // Hz
 
-size_t goal_frequency;
+uint32_t goal_frequency;
+
+void pit_sleep_ms(uint32_t ms) {
+  uint64_t start_ticks = get_ticks();
+  uint64_t end_ticks = (start_ticks + (ms * goal_frequency) / 1000) - 1;
+
+  while (get_ticks() < end_ticks) {
+    uint64_t current_ticks = get_ticks();
+
+    if (current_ticks < start_ticks) {
+      start_ticks = current_ticks;
+      end_ticks = start_ticks + (ms * goal_frequency) / 1000;
+    }
+
+    asm volatile("hlt");
+  }
+}
 
 void setup_pit() {
   __asm__ __volatile__("cli");
