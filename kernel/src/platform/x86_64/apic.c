@@ -98,7 +98,7 @@ void bootstrap_apic() {
 }
 
 void send_eio() {
-  uint32_t *eoi_ptr = (uint32_t *)apic_virt + 0xB0;
+  uintptr_t eoi_ptr = apic_virt + 0xB0;
 
-  *eoi_ptr = 0;
+  ((uint32_t *)(eoi_ptr))[0] = 0;
 }

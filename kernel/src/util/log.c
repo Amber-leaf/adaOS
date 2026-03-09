@@ -14,6 +14,9 @@
 #define WRN
 #define ERR
 
+#define TEST_PASS
+#define TEST_FAIL
+
 void k_debug(char *format, ...) {
 #ifdef DBG
   va_list va;
@@ -80,10 +83,42 @@ void k_err(char *format, ...) {
   va_start(va, format);
 
   k_puts("[");
-  set_text_colour(0xff6666);
+  set_text_colour(ERR_TEXT_COLOUR);
   k_puts("ERR");
   set_text_colour(PLAIN_TEXT_COLOUR);
   k_puts("] Kernel: ");
+  vprintf(format, va);
+  va_end(va);
+  crlf();
+#endif
+}
+
+void k_test_pass(char *format, ...) {
+#ifdef TEST_PASS
+  va_list va;
+  va_start(va, format);
+
+  k_puts("[");
+  set_text_colour(OK_TEXT_COLOUR);
+  k_puts("TEST PASS");
+  set_text_colour(PLAIN_TEXT_COLOUR);
+  k_puts("] ");
+  vprintf(format, va);
+  va_end(va);
+  crlf();
+#endif
+}
+
+void k_test_fail(char *format, ...) {
+#ifdef TEST_FAIL
+  va_list va;
+  va_start(va, format);
+
+  k_puts("[");
+  set_text_colour(ERR_TEXT_COLOUR);
+  k_puts("TEST FAIL");
+  set_text_colour(PLAIN_TEXT_COLOUR);
+  k_puts("] ");
   vprintf(format, va);
   va_end(va);
   crlf();

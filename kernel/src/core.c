@@ -109,7 +109,7 @@ int memcmp(const void *s1, const void *s2, size_t n) {
 }
 
 // Halt and catch fire function.
-void hcf(void) {
+void __attribute__((noreturn)) hcf(void) {
   for (;;) {
     asm("hlt");
   }
@@ -129,6 +129,7 @@ struct limine_framebuffer *get_framebuffer(void) {
 int64_t get_boot_time(void) {
   if (bootime_request.response == NULL) {
     k_err("Could not get time at boot!");
+    return 0;
   }
 
   return bootime_request.response->timestamp;
@@ -152,8 +153,17 @@ void print_banner(void) {
 
   printf_("The date is %s.\n\n", ts);
   printf_("Copyright (C) 2026 Ambersoft Technologies.\n");
-  printf_(
-      "See LICENCE in the source directory for details. (TL;DL, BSD 3)\n\n");
+
+  set_text_colour(0xffff66);
+
+  printf_("Notice: Due to recent California and Colorado laws requiring age "
+          "verification\nfor all OSes, adaOS is not licensed for"
+          " use in California or Colorado.\n");
+
+  set_text_colour(0xffffff);
+
+  printf_("See LICENCE in the source directory for details.\n");
+
   print_free_ram();
   crlf();
 }
@@ -188,8 +198,9 @@ void kmain(void) {
   // 0x800 | 0x100 | 0x001
   write_msr(IA32_EFER, 0x901);
   if (read_msr(IA32_EFER) != 0xd01) {
-    k_err("IA32_EFER Error: could not set IA_32e mode");
+    k_test_fail("IA32_EFER Error: could not set IA_32e mode");
   }
+  k_test_pass("IA32_EFER");
 
   setup_pmm();
 
@@ -209,7 +220,7 @@ void kmain(void) {
 
   bootstrap_apic();
 
-  k_ok("APIC Setup");
+  k_ok("Bootstrap APIC Setup");
 
   if (setup_acpi()) {
     k_ok("Setup ACPI");
