@@ -157,8 +157,9 @@ void print_banner(void) {
   set_text_colour(0xffff66);
 
   printf_("Notice: Due to recent California and Colorado laws requiring age "
-          "verification\nfor all OSes, adaOS is not licensed for"
-          " use in California or Colorado.\n");
+          "verification\nfor all OS's, adaOS is not licensed for"
+          " use in California or Colorado.\nPlease, complain to your local "
+          "representatives!\n");
 
   set_text_colour(0xffffff);
 

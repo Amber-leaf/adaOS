@@ -107,9 +107,9 @@ struct memory_descriptor get_memory_descriptor() {
   desc.chunk_ptr = free_chunks;
   desc.chunk_count = found_chunks;
 
-  for (int i = 0; i < desc.chunk_count; i++) {
-    k_debug("%d: %p %p", i, desc.chunk_ptr[i].base, desc.chunk_ptr[i].bounds);
-  }
+  // for (int i = 0; i < desc.chunk_count; i++) {
+  // k_debug("%d: %p %p", i, desc.chunk_ptr[i].base, desc.chunk_ptr[i].bounds);
+  //}
 
   return desc;
 }
