@@ -203,19 +203,19 @@ void kmain(void) {
 
   k_ok("Setup Heap");
 
+  setup_pic();
+
+  k_ok("Disabled PIC");
+
+  bootstrap_apic();
+
+  k_ok("APIC Setup");
+
   if (setup_acpi()) {
     k_ok("Setup ACPI");
   } else {
     k_err("APIC Setup Failed! Things may break!");
   }
-
-  // setup_pic();
-
-  // k_ok("Disabled PIC");
-
-  // setup_apic();
-
-  // k_ok("APIC Setup");
 
   k_log("Halt");
 

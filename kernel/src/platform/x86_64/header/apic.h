@@ -24,8 +24,8 @@ typedef struct lvt_entry {
   bool mask : 1;         // on 1 the interrupt is disabled, if 0 is enabled.
 } lvt_entry_t;
 
-local_apic_r_t get_apic();
-void setup_apic();
+
+void bootstrap_apic();
 void send_eio();
 
 #endif
