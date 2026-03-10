@@ -104,7 +104,7 @@ void k_test_pass(char *format, ...) {
 
   k_puts("[");
   set_text_colour(OK_TEXT_COLOUR);
-  k_puts("TEST PASS");
+  k_puts("TEST PASSED");
   set_text_colour(PLAIN_TEXT_COLOUR);
   k_puts("] ");
   vprintf(format, va);
@@ -124,7 +124,7 @@ void k_test_fail(char *format, ...) {
 
   k_puts("[");
   set_text_colour(ERR_TEXT_COLOUR);
-  k_puts("TEST FAIL");
+  k_puts("TEST FAILED");
   set_text_colour(PLAIN_TEXT_COLOUR);
   k_puts("] ");
   vprintf(format, va);

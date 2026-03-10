@@ -287,14 +287,21 @@ void kmain(void) {
 
   k_ok("Bootstrap APIC Setup");
 
-  old_time = get_apic_ticks();
-  apic_sleep_ms(APIC_SLEEP_TEST_MS);
-  difference = get_apic_ticks() - old_time;
+  uint64_t apic_old_time = get_apic_ticks();
+  uint64_t pit_old_time = get_pit_ticks();
 
-  if (difference > APIC_SLEEP_TEST_MS + APIC_SLEEP_TEST_TOLERANCE ||
-      difference < APIC_SLEEP_TEST_MS - APIC_SLEEP_TEST_TOLERANCE) {
-    k_test_fail("APIC sleep time was off by %dms!",
-                difference - APIC_SLEEP_TEST_MS);
+  apic_sleep_ms(APIC_SLEEP_TEST_MS);
+
+  uint64_t apic_difference = get_apic_ticks() - apic_old_time;
+  uint64_t pit_difference = get_pit_ticks() - pit_old_time;
+
+  if ((apic_difference > APIC_SLEEP_TEST_MS + APIC_SLEEP_TEST_TOLERANCE ||
+       apic_difference < APIC_SLEEP_TEST_MS - APIC_SLEEP_TEST_TOLERANCE) &&
+          pit_difference > APIC_SLEEP_TEST_MS + APIC_SLEEP_TEST_TOLERANCE ||
+      pit_difference < APIC_SLEEP_TEST_MS - APIC_SLEEP_TEST_TOLERANCE) {
+    k_test_fail(
+        "APIC sleep time was off by %dms or APIC and PIT did not agree!",
+        apic_difference - APIC_SLEEP_TEST_MS);
   } else {
     k_test_pass("APIC Sleep");
   }

@@ -37,6 +37,10 @@ void set_speaker_frequency(uint32_t frequency) {
 }
 
 void play_sound(uint32_t frequency) {
+  if (frequency == 0) {
+    return;
+  }
+
   set_speaker_frequency(frequency);
   uint8_t tmp = inb(0x61);
   if ((tmp & 3) != 3) {
