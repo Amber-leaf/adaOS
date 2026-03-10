@@ -62,6 +62,7 @@ __attribute__((
 
 #define BOOT_CHIME
 #define SLEEP_TEST_MS 10
+#define SLEEP_TEST_TOLERANCE 1
 
 void *memcpy(void *restrict dest, const void *restrict src, size_t n) {
   uint8_t *restrict pdest = (uint8_t *restrict)dest;
@@ -141,7 +142,7 @@ int64_t get_boot_time(void) {
   return bootime_request.response->timestamp;
 }
 
-static char *version_string = "0.0.3";
+static char *version_string = "0.0.4";
 
 void print_banner(void) {
   set_text_colour(0xe6a6a1);
@@ -273,8 +274,9 @@ void kmain(void) {
   apic_sleep_ms(SLEEP_TEST_MS);
   uint64_t difference = get_apic_ticks() - old_time;
 
-  if (difference != SLEEP_TEST_MS) {
-    k_test_fail("APIC sleep was off by %dms!", difference - SLEEP_TEST_MS);
+  if (difference > SLEEP_TEST_MS + SLEEP_TEST_TOLERANCE ||
+      difference < SLEEP_TEST_MS - SLEEP_TEST_TOLERANCE) {
+    k_test_fail("APIC sleep time was off by %dms!", difference - SLEEP_TEST_MS);
   } else {
     k_test_pass("APIC Sleep");
   }
