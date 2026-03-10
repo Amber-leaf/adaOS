@@ -1,4 +1,6 @@
 #include "header/core.h"
+#include "crypt/header/random.h"
+#include "data/logos.h"
 #include "header/limine.h"
 #include "interupt/header/apic_timer.h"
 #include "interupt/header/pit_handler.h"
@@ -67,6 +69,8 @@ __attribute__((
 
 #define APIC_SLEEP_TEST_MS 10
 #define APIC_SLEEP_TEST_TOLERANCE 1
+
+extern char *logos[];
 
 void *memcpy(void *restrict dest, const void *restrict src, size_t n) {
   uint8_t *restrict pdest = (uint8_t *restrict)dest;
@@ -165,16 +169,7 @@ void print_banner(void) {
   printf_("The date is %s.\n\n", ts);
   printf_("Copyright (C) 2026 Ambersoft Technologies.\n");
 
-  printf_("\n ________"
-          "\n< adaOS! >"
-          "\n --------"
-          "\n        \\   ^__^"
-          "\n         \\  (oo)\\_______"
-          "\n            (__)\\       )\\/\\"
-          "\n                ||----w |"
-          "\n                ||     ||");
-
-  crlf();
+  print_random_logo();
 
   set_text_colour(0xffff66);
 
@@ -202,13 +197,16 @@ void kmain(void) {
 
   calculate_screen_constants(get_framebuffer());
 
+  setup_random(get_boot_time() * 19650218UL);
+
   print_banner();
 
   if (!check_cpuid()) {
-    panic("CPUID not Supported!");
+    k_err("CPUID not supported!");
+  } else {
+    k_log("CPU info: %s (%s).", get_cpu_name(), get_cpu_vendor());
+    k_log("Hypervisor: %s", get_hypervisor_vendor());
   }
-  k_log("CPU info: %s (%s).", get_cpu_name(), get_cpu_vendor());
-  k_log("Hypervisor: %s", get_hypervisor_vendor());
 
   crlf();
 
@@ -297,8 +295,8 @@ void kmain(void) {
 
   if ((apic_difference > APIC_SLEEP_TEST_MS + APIC_SLEEP_TEST_TOLERANCE ||
        apic_difference < APIC_SLEEP_TEST_MS - APIC_SLEEP_TEST_TOLERANCE) &&
-          pit_difference > APIC_SLEEP_TEST_MS + APIC_SLEEP_TEST_TOLERANCE ||
-      pit_difference < APIC_SLEEP_TEST_MS - APIC_SLEEP_TEST_TOLERANCE) {
+      (pit_difference > APIC_SLEEP_TEST_MS + APIC_SLEEP_TEST_TOLERANCE ||
+       pit_difference < APIC_SLEEP_TEST_MS - APIC_SLEEP_TEST_TOLERANCE)) {
     k_test_fail(
         "APIC sleep time was off by %dms or APIC and PIT did not agree!",
         apic_difference - APIC_SLEEP_TEST_MS);
