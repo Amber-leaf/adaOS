@@ -1,6 +1,5 @@
 #include "cpuid.h"
 #include "../../header/core.h"
-#include "../../util/header/log.h"
 
 #include "header/cpuid.h"
 #include <stdbool.h>
