@@ -4,7 +4,7 @@
 #include "../../util/header/log.h"
 #include "../../util/header/panic.h"
 
-#include "../../interupt/header/apic_handler.h"
+#include "../../interupt/header/apic_timer.h"
 
 #include "header/msr.h"
 #include "header/pic.h"
@@ -43,6 +43,7 @@ struct local_apic_r get_apic() {
 
 void write_lvt_entry(uintptr_t offset, uint8_t idt_index) {
   uint32_t *ptr = ((uint32_t *)(apic_virt + offset));
+
   ptr[0] = idt_index;
   ptr[8] = 0b000001101;
 }
@@ -56,26 +57,18 @@ uint32_t read_register(uintptr_t offset) {
 }
 
 void apic_start_timer() {
-  // Tell APIC timer to use divider 16
   write_register(APIC_TIMER_DIVIDE_CONFIG, 0x3);
-
-  // Set APIC init counter to -1
   write_register(APIC_TIMER_INITIAL_COUNT, 0xFFFFFFFF);
 
-  // Perform PIT-supported sleep
   pit_sleep_ms(600);
 
-  // Stop the APIC timer
   write_register(APIC_LVT_TIMER, (1 << 16));
 
-  // Now we know how often the APIC timer has ticked in 1ms
   uint32_t ticks_1ms =
       (0xFFFFFFFF - read_register(APIC_TIMER_CURRENT_COUNT)) / 600;
 
   k_debug("ticks in 1ms: %d", ticks_1ms);
 
-  // Start timer as periodic on IRQ 0, divider 16, with the number of ticks we
-  // counted
   write_register(APIC_LVT_TIMER, 0xf1 | 0x20000);
   write_register(APIC_TIMER_DIVIDE_CONFIG, 0x3);
   write_register(APIC_TIMER_INITIAL_COUNT, ticks_1ms);
@@ -128,8 +121,8 @@ void bootstrap_apic() {
 
   apic_start_timer();
 
+  // TODO:
   // write_lvt_entry(APIC_LVT_THERMAL, 0xf2);
-
   // write_lvt_entry(APIC_LVT_ERROR, 0xf6);
 }
 

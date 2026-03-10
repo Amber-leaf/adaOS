@@ -1,5 +1,5 @@
-#ifndef APIC_HANDLER_H_
-#define APIC_HANDLER_H_
+#ifndef APIC_TIMER_H_
+#define APIC_TIMER_H_
 
 #include <stdint.h>
 void apic_timer_irq();

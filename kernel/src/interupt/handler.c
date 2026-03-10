@@ -5,7 +5,7 @@
 #include "../util/header/panic.h"
 #include "../util/header/printf.h"
 
-#include "header/apic_handler.h"
+#include "header/apic_timer.h"
 #include "header/isr.h"
 #include "header/pit_handler.h"
 
@@ -88,6 +88,7 @@ void exception_handler(struct cpu_status *context) {
     break;
   case 0xD: // #GP General Protection Fault
     unimplemented_fault("General Protection Fault (#GP)", context);
+    k_debug("err: %p", context->error_code);
     hcf();
     break;
   case 0xE: // #PF Page Fault

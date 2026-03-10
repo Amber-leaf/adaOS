@@ -1,6 +1,7 @@
 #include "header/core.h"
 #include "header/limine.h"
-#include "interupt/header/apic_handler.h"
+#include "interupt/header/apic_timer.h"
+#include "interupt/header/pit_handler.h"
 #include "memory/header/heap.h"
 #include "memory/header/memmap.h"
 #include "memory/physical/header/pmm.h"
@@ -233,36 +234,10 @@ void kmain(void) {
 
   k_ok("Setup Heap");
 
-  bootstrap_apic();
+  bootstrap_apic(); // TODO: cleanly fail
 
   k_ok("Bootstrap APIC Setup");
 
-  // for (;;) {
-  // k_debug("apic ticks: %d", get_apic_ticks());
-  // pit_sleep_ms(1);
-  //}
-
-  // pit_sleep_ms(1000);
-
-  k_debug("sleeping");
-
-  uint32_t old_ticks = get_apic_ticks();
-
-  apic_sleep_ms(1000);
-
-  k_debug("resuming, apic slept for %d ticks", get_apic_ticks() - old_ticks);
-
-  old_ticks = get_apic_ticks();
-
-  pit_sleep_ms(1000);
-
-  k_debug("resuming, pit slept for %d ticks", get_apic_ticks() - old_ticks);
-
-  // pit_sleep_ms(60000);
-
-  // bootstrap_apic();
-
-  // k_ok("Bootstrap APIC Setup");
 
   // if (setup_acpi()) {
   //  k_ok("Setup ACPI");
