@@ -61,8 +61,12 @@ __attribute__((
         ".limine_requests_end"))) static volatile LIMINE_REQUESTS_END_MARKER;
 
 #define BOOT_CHIME
-#define SLEEP_TEST_MS 10
-#define SLEEP_TEST_TOLERANCE 1
+
+#define PIT_SLEEP_TEST_MS 10
+#define PIT_SLEEP_TEST_TOLERANCE 1
+
+#define APIC_SLEEP_TEST_MS 10
+#define APIC_SLEEP_TEST_TOLERANCE 1
 
 void *memcpy(void *restrict dest, const void *restrict src, size_t n) {
   uint8_t *restrict pdest = (uint8_t *restrict)dest;
@@ -184,6 +188,8 @@ void print_banner(void) {
 
   printf_("See LICENCE in the source directory for details.\n");
 
+  crlf();
+
   print_free_ram();
 }
 
@@ -201,8 +207,8 @@ void kmain(void) {
   if (!check_cpuid()) {
     panic("CPUID not Supported!");
   }
-  k_log("CPU info: %s (%s).\nHypervisor: %s", get_cpu_name(), get_cpu_vendor(),
-        get_hypervisor_vendor());
+  k_log("CPU info: %s (%s).", get_cpu_name(), get_cpu_vendor());
+  k_log("Hypervisor: %s", get_hypervisor_vendor());
 
   crlf();
 
@@ -222,11 +228,22 @@ void kmain(void) {
 
   k_ok("Setup PIT as Bootstrap Timer");
 
+  uint64_t old_time = get_pit_ticks();
+  pit_sleep_ms(PIT_SLEEP_TEST_MS);
+  uint64_t difference = get_pit_ticks() - old_time;
+
+  if (difference > PIT_SLEEP_TEST_MS + PIT_SLEEP_TEST_TOLERANCE ||
+      difference < PIT_SLEEP_TEST_MS - PIT_SLEEP_TEST_TOLERANCE) {
+    k_test_fail("PIT sleep time was off by %dms!",
+                difference - PIT_SLEEP_TEST_MS);
+  } else {
+    k_test_pass("PIT Sleep");
 #ifdef BOOT_CHIME
-  play_sound(1000);
-  pit_sleep_ms(40);
-  sound_off();
+    play_sound(1000);
+    pit_sleep_ms(40);
+    sound_off();
 #endif
+  }
 
   // 0x800 | 0x100 | 0x001
   write_msr(IA32_EFER, 0x901);
@@ -270,13 +287,14 @@ void kmain(void) {
 
   k_ok("Bootstrap APIC Setup");
 
-  uint64_t old_time = get_apic_ticks();
-  apic_sleep_ms(SLEEP_TEST_MS);
-  uint64_t difference = get_apic_ticks() - old_time;
+  old_time = get_apic_ticks();
+  apic_sleep_ms(APIC_SLEEP_TEST_MS);
+  difference = get_apic_ticks() - old_time;
 
-  if (difference > SLEEP_TEST_MS + SLEEP_TEST_TOLERANCE ||
-      difference < SLEEP_TEST_MS - SLEEP_TEST_TOLERANCE) {
-    k_test_fail("APIC sleep time was off by %dms!", difference - SLEEP_TEST_MS);
+  if (difference > APIC_SLEEP_TEST_MS + APIC_SLEEP_TEST_TOLERANCE ||
+      difference < APIC_SLEEP_TEST_MS - APIC_SLEEP_TEST_TOLERANCE) {
+    k_test_fail("APIC sleep time was off by %dms!",
+                difference - APIC_SLEEP_TEST_MS);
   } else {
     k_test_pass("APIC Sleep");
   }
