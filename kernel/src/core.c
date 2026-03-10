@@ -250,7 +250,7 @@ void kmain(void) {
   if (read_msr(IA32_EFER) != 0xd01) {
     k_test_fail("IA32_EFER Error: could not set IA_32e mode");
   } else {
-    k_test_pass("IA32_EFER"); // TODO: write more tests.
+    k_test_pass("IA32_EFER");
   }
 
   setup_pmm();
