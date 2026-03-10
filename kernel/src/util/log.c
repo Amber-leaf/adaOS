@@ -1,3 +1,4 @@
+#include "../platform/x86_64//header/pit.h"
 #include "header/print_lowlevel.h"
 #include "header/printf.h"
 
@@ -8,7 +9,7 @@
 #define WRN_TEXT_COLOUR 0xffff66
 #define ERR_TEXT_COLOUR 0xff6666
 
-#define DBG
+// #define DBG
 #define LOG
 #define OK
 #define WRN
@@ -16,6 +17,9 @@
 
 #define TEST_PASS
 #define TEST_FAIL
+
+#define TEST_FAIL_FREQUENCY 400
+#define TEST_FAIL_HOLD 400
 
 void k_debug(char *format, ...) {
 #ifdef DBG
@@ -111,6 +115,10 @@ void k_test_pass(char *format, ...) {
 
 void k_test_fail(char *format, ...) {
 #ifdef TEST_FAIL
+  if (get_pit_configured()) {
+    play_sound(TEST_FAIL_FREQUENCY);
+  }
+
   va_list va;
   va_start(va, format);
 
@@ -122,5 +130,10 @@ void k_test_fail(char *format, ...) {
   vprintf(format, va);
   va_end(va);
   crlf();
+
+  if (get_pit_configured()) {
+    pit_sleep_ms(TEST_FAIL_HOLD);
+    sound_off();
+  }
 #endif
 }

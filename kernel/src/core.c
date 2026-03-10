@@ -61,6 +61,7 @@ __attribute__((
         ".limine_requests_end"))) static volatile LIMINE_REQUESTS_END_MARKER;
 
 #define BOOT_CHIME
+#define SLEEP_TEST_MS 10
 
 void *memcpy(void *restrict dest, const void *restrict src, size_t n) {
   uint8_t *restrict pdest = (uint8_t *restrict)dest;
@@ -167,6 +168,7 @@ void print_banner(void) {
           "\n            (__)\\       )\\/\\"
           "\n                ||----w |"
           "\n                ||     ||");
+
   crlf();
 
   set_text_colour(0xffff66);
@@ -229,12 +231,22 @@ void kmain(void) {
   write_msr(IA32_EFER, 0x901);
   if (read_msr(IA32_EFER) != 0xd01) {
     k_test_fail("IA32_EFER Error: could not set IA_32e mode");
+  } else {
+    k_test_pass("IA32_EFER"); // TODO: write more tests.
   }
-  k_test_pass("IA32_EFER"); // TODO: write more tests.
 
   setup_pmm();
 
   k_ok("Setup PMM");
+
+  void *p = pp_alloc();
+  if (p != NULL && (uintptr_t)p < HIGHER_HALF) {
+    k_test_pass("PMM Pointer Sanity Check");
+  } else {
+    k_test_fail("PMM Pointer was Bogus!");
+  }
+
+  pp_free(p);
 
   setup_vmm();
 
@@ -244,9 +256,28 @@ void kmain(void) {
 
   k_ok("Setup Heap");
 
+  p = kmalloc(PAGE_SIZE * 2);
+  if (p != NULL && (uintptr_t)p > HIGHER_HALF) {
+    k_test_pass("Heap Pointer Sanity Check");
+  } else {
+    k_test_fail("Heap Pointer was Bogus!");
+  }
+
+  kfree(p);
+
   bootstrap_apic(); // TODO: cleanly fail
 
   k_ok("Bootstrap APIC Setup");
+
+  uint64_t old_time = get_apic_ticks();
+  apic_sleep_ms(SLEEP_TEST_MS);
+  uint64_t difference = get_apic_ticks() - old_time;
+
+  if (difference != SLEEP_TEST_MS) {
+    k_test_fail("APIC sleep was off by %dms!", difference - SLEEP_TEST_MS);
+  } else {
+    k_test_pass("APIC Sleep");
+  }
 
   // if (setup_acpi()) {
   //  k_ok("Setup ACPI");

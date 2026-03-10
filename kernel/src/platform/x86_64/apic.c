@@ -67,7 +67,8 @@ void apic_start_timer() {
   uint32_t ticks_1ms =
       (0xFFFFFFFF - read_register(APIC_TIMER_CURRENT_COUNT)) / 600;
 
-  k_debug("ticks in 1ms: %d", ticks_1ms);
+  k_debug("ticks in 1ms: %d, therefore, apic timer is at %dhz", ticks_1ms,
+          ticks_1ms * 1000);
 
   write_register(APIC_LVT_TIMER, 0xf1 | 0x20000);
   write_register(APIC_TIMER_DIVIDE_CONFIG, 0x3);

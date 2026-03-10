@@ -67,14 +67,16 @@ static void set_page(uint64_t page_index, bool free) {
 // get the "best" free page's index
 uint64_t get_free_page() {
   if (last_page_used >= (get_k_addr()->physical_base) / PAGE_SIZE) {
+    k_debug("last page used out of kernel bounds");
     last_page_used = 1;
   }
 
   if (last_page_used >= MAX_PAGES) {
+    k_debug("last page used out of memory bounds");
     last_page_used = 1;
   }
 
-  if (page_free(last_page_used++)) {
+  if (page_free(++last_page_used)) {
     return last_page_used;
   }
 
@@ -226,7 +228,7 @@ void _pp_free(uint64_t page_index) {
   }
 
   if (page_free(page_index)) {
-    k_wrn("tried to free physical page %d that was allready free!", page_index);
+    k_wrn("tried to free physical page %d that was already free!", page_index);
     return;
   }
 

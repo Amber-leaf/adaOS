@@ -18,6 +18,10 @@
 
 uint32_t timer_goal_frequency;
 
+bool configured = false;
+
+bool get_pit_configured() { return configured; }
+
 void set_pit_frequency(uint32_t frequency) {
   uint32_t divisor = PIT_FREQUENCY / frequency;
   outb(PIT_CONTROL_PORT, 0x36);
@@ -70,6 +74,8 @@ void setup_pit() {
   set_pit_frequency(timer_goal_frequency);
 
   unmask_irq(0);
+
+  configured = true;
 
   __asm__ __volatile__("sti");
 }
