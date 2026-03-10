@@ -17,8 +17,9 @@ cpuid_regs_t cpuid(uint32_t leaf, uint32_t subleaf) {
 
 int cpu_feature_bit(uint32_t leaf, uint32_t subleaf, uint8_t reg,
                     uint32_t bit) {
-  if (bit > 31)
+  if (bit > 31) {
     return 0;
+  }
 
   struct cpuid_regs r = cpuid(leaf, subleaf);
 
@@ -68,7 +69,7 @@ char *get_hypervisor_vendor() {
 
     return hv_vendor;
   } else {
-    return "REALHARDWARE";
+    return "NOHYPERVISOR";
   }
 }
 
