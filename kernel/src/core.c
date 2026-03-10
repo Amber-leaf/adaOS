@@ -257,7 +257,7 @@ void kmain(void) {
 
   k_ok("Setup Heap");
 
-  p = kmalloc(PAGE_SIZE * 2);
+  p = kmalloc(PAGE_SIZE * 1.5); // Make sure we can allocate >PAGE_SIZE objects
   if (p != NULL && (uintptr_t)p > HIGHER_HALF) {
     k_test_pass("Heap Pointer Sanity Check");
   } else {
@@ -266,7 +266,7 @@ void kmain(void) {
 
   kfree(p);
 
-  bootstrap_apic(); // TODO: cleanly fail
+  bootstrap_apic(); // TODO: cleanly fail and use PIT as timer instead.
 
   k_ok("Bootstrap APIC Setup");
 
