@@ -159,6 +159,16 @@ void print_banner(void) {
   printf_("The date is %s.\n\n", ts);
   printf_("Copyright (C) 2026 Ambersoft Technologies.\n");
 
+  printf_("\n ________"
+          "\n< adaOS! >"
+          "\n --------"
+          "\n        \\   ^__^"
+          "\n         \\  (oo)\\_______"
+          "\n            (__)\\       )\\/\\"
+          "\n                ||----w |"
+          "\n                ||     ||");
+  crlf();
+
   set_text_colour(0xffff66);
 
   printf_("Notice: Due to recent California and Colorado laws requiring age "
@@ -237,7 +247,6 @@ void kmain(void) {
   bootstrap_apic(); // TODO: cleanly fail
 
   k_ok("Bootstrap APIC Setup");
-
 
   // if (setup_acpi()) {
   //  k_ok("Setup ACPI");
