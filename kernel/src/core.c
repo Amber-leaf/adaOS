@@ -197,6 +197,18 @@ void kmain(void) {
 
   k_ok("IDT Init");
 
+  setup_pic();
+
+  k_ok("Setup PIC");
+
+  setup_pit();
+
+  k_ok("Setup PIT as Bootstrap Timer");
+
+  play_sound(1000);
+  pit_sleep_ms(60);
+  sound_off();
+
   // 0x800 | 0x100 | 0x001
   write_msr(IA32_EFER, 0x901);
   if (read_msr(IA32_EFER) != 0xd01) {
@@ -216,31 +228,17 @@ void kmain(void) {
 
   k_ok("Setup Heap");
 
-  setup_pic();
+  // pit_sleep_ms(60000);
 
-  k_ok("Setup PIC");
+  // bootstrap_apic();
 
-  setup_pit();
+  // k_ok("Bootstrap APIC Setup");
 
-  k_ok("Setup PIT as Bootstrap Timer");
-
-  k_log("sleep");
-
-  pit_sleep_ms(10000);
-
-  k_log("resume");
-
-  hcf();
-
-  bootstrap_apic();
-
-  k_ok("Bootstrap APIC Setup");
-
-  if (setup_acpi()) {
-    k_ok("Setup ACPI");
-  } else {
-    k_err("APIC Setup Failed! Things may break!");
-  }
+  // if (setup_acpi()) {
+  //  k_ok("Setup ACPI");
+  //} else {
+  // k_err("APIC Setup Failed! Things may break!");
+  //}
 
   k_log("Halt");
   hcf();
