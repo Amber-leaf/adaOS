@@ -55,4 +55,6 @@ typedef struct lvt_entry {
 void bootstrap_apic();
 void send_eio();
 
+void apic_sleep_ms(uint32_t ms);
+
 #endif

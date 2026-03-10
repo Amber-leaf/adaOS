@@ -4,7 +4,11 @@
 #include "../../util/header/log.h"
 #include "../../util/header/panic.h"
 
+#include "../../interupt/header/apic_handler.h"
+
 #include "header/msr.h"
+#include "header/pic.h"
+#include "header/pit.h"
 #include <stdint.h>
 
 #define IA32_APIC_BASE_MSR 0x1B
@@ -51,6 +55,50 @@ uint32_t read_register(uintptr_t offset) {
   return ((volatile uint32_t *)(apic_virt + offset))[0];
 }
 
+void apic_start_timer() {
+  // Tell APIC timer to use divider 16
+  write_register(APIC_TIMER_DIVIDE_CONFIG, 0x3);
+
+  // Set APIC init counter to -1
+  write_register(APIC_TIMER_INITIAL_COUNT, 0xFFFFFFFF);
+
+  // Perform PIT-supported sleep
+  pit_sleep_ms(600);
+
+  // Stop the APIC timer
+  write_register(APIC_LVT_TIMER, (1 << 16));
+
+  // Now we know how often the APIC timer has ticked in 1ms
+  uint32_t ticks_1ms =
+      (0xFFFFFFFF - read_register(APIC_TIMER_CURRENT_COUNT)) / 600;
+
+  k_debug("ticks in 1ms: %d", ticks_1ms);
+
+  // Start timer as periodic on IRQ 0, divider 16, with the number of ticks we
+  // counted
+  write_register(APIC_LVT_TIMER, 0xf1 | 0x20000);
+  write_register(APIC_TIMER_DIVIDE_CONFIG, 0x3);
+  write_register(APIC_TIMER_INITIAL_COUNT, ticks_1ms);
+
+  unmask_irq(0);
+}
+
+void apic_sleep_ms(uint32_t ms) {
+  uint64_t start_ms = get_apic_ticks();
+  uint64_t end_ms = start_ms + ms;
+
+  while (get_apic_ticks() < end_ms) {
+    uint64_t current_ms = get_apic_ticks();
+
+    if (current_ms < start_ms) {
+      start_ms = current_ms;
+      end_ms = start_ms + ms;
+    }
+
+    asm volatile("hlt");
+  }
+}
+
 void bootstrap_apic() {
   struct local_apic_r apic = get_apic();
 
@@ -78,9 +126,11 @@ void bootstrap_apic() {
 
   k_debug("apic id: 0x%x", read_register(APIC_ID));
 
-  write_lvt_entry(APIC_LVT_THERMAL, 0xf2);
+  apic_start_timer();
 
-  write_lvt_entry(APIC_LVT_ERROR, 0xf6);
+  // write_lvt_entry(APIC_LVT_THERMAL, 0xf2);
+
+  // write_lvt_entry(APIC_LVT_ERROR, 0xf6);
 }
 
 void send_eio() { write_register(APIC_EOI, 0); }

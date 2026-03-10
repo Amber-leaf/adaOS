@@ -4,7 +4,7 @@
 #include <stdint.h>
 void pit_irq();
 
-uint64_t get_ticks();
-void reset_ticks();
+uint64_t get_pit_ticks();
+void reset_pit_ticks();
 
 #endif

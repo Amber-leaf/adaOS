@@ -5,6 +5,7 @@
 #include "../util/header/panic.h"
 #include "../util/header/printf.h"
 
+#include "header/apic_handler.h"
 #include "header/isr.h"
 #include "header/pit_handler.h"
 
@@ -65,6 +66,7 @@ void exception_handler(struct cpu_status *context) {
     break;
   case 0x6: // #UD Invalid Opcode
     unimplemented_fault("Invalid Opcode (#UD)", context);
+    hcf();
     break;
   case 0x7: // #NM Device Not Available
     unimplemented_fault("Device Not Available (#NM)", context);
@@ -143,7 +145,7 @@ void exception_handler(struct cpu_status *context) {
     unimplemented_fault("APIC Spurious Vector", context);
     break;
   case 0xf1:
-    unimplemented_fault("APIC Timer", context);
+    apic_timer_irq();
     break;
   case 0xf2:
     unimplemented_abort("APIC Thermal Shutdown", context);

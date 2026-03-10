@@ -4,6 +4,7 @@
 #include "header/pic.h"
 #include "header/port.h"
 
+#include <stdbool.h>
 #include <stddef.h>
 
 #define PIT_FREQUENCY 1193182
@@ -16,7 +17,7 @@
 
 uint32_t timer_goal_frequency;
 
-void set_pit_to_frequency(uint32_t frequency) {
+void set_pit_frequency(uint32_t frequency) {
   uint32_t divisor = PIT_FREQUENCY / frequency;
   outb(PIT_CONTROL_PORT, 0x36);
   outb(PIT_CHANNEL0_PORT, divisor & 0xFF);
@@ -44,13 +45,13 @@ void sound_off() {
 }
 
 void pit_sleep_ms(uint32_t ms) {
-  set_pit_to_frequency(timer_goal_frequency);
+  set_pit_frequency(timer_goal_frequency);
 
-  uint64_t start_ticks = get_ticks();
+  uint64_t start_ticks = get_pit_ticks();
   uint64_t end_ticks = (start_ticks + (ms * timer_goal_frequency) / 1000) - 1;
 
-  while (get_ticks() < end_ticks) {
-    uint64_t current_ticks = get_ticks();
+  while (get_pit_ticks() < end_ticks) {
+    uint64_t current_ticks = get_pit_ticks();
 
     if (current_ticks < start_ticks) {
       start_ticks = current_ticks;
@@ -65,7 +66,7 @@ void setup_pit() {
   __asm__ __volatile__("cli");
 
   timer_goal_frequency = PIT_GOAL_FREQUENCY;
-  set_pit_to_frequency(timer_goal_frequency);
+  set_pit_frequency(timer_goal_frequency);
 
   unmask_irq(0);
 

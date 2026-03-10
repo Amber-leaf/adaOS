@@ -1,9 +1,9 @@
 #include <stdint.h>
 
-uint64_t ticks = 0;
+uint64_t pit_ticks = 0;
 
-void pit_irq() { ticks++; }
+void pit_irq() { pit_ticks++; }
 
-uint64_t get_ticks() { return ticks; }
+uint64_t get_pit_ticks() { return pit_ticks; }
 
-void reset_ticks() { ticks = 0; }
+void reset_pit_ticks() { pit_ticks = 0; }
