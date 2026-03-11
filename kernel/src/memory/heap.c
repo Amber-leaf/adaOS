@@ -24,6 +24,8 @@ void *heap_start = NULL;
 size_t heap_size = 0;
 heap_free_block_t *free_list_head = NULL;
 
+extern pagemap_t *kernel_pagemap;
+
 int heap_grow_pages(size_t pages) {
   if (pages == 0)
     return 0;
@@ -39,7 +41,8 @@ int heap_grow_pages(size_t pages) {
     }
 
     uintptr_t virt = base + (i * PAGE_SIZE);
-    if (!map_page(virt, (uintptr_t)phys, PTE_PRESENT | PTE_WRITABLE | PTE_NX)) {
+    if (!map_page(kernel_pagemap, virt, (uintptr_t)phys,
+                  PTE_PRESENT | PTE_WRITABLE | PTE_NX)) {
       panic("heap_expand_pages: vmm_map_page failed");
       return 0;
     }

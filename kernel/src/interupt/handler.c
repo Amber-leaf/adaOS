@@ -88,7 +88,7 @@ void exception_handler(struct cpu_status *context) {
     break;
   case 0xD: // #GP General Protection Fault
     unimplemented_fault("General Protection Fault (#GP)", context);
-    k_debug("err: %p", context->error_code);
+    print_cpu_status(context);
     hcf();
     break;
   case 0xE: // #PF Page Fault
@@ -164,6 +164,7 @@ void exception_handler(struct cpu_status *context) {
 
   default:
     unimplemented_fault("Unknown Exception", context);
+    print_cpu_status(context);
     break;
   }
 

@@ -23,6 +23,7 @@ enum rarity { COMMON, UNCOMMON, RARE, EPIC, LEGENDARY, MYTHICAL };
 char *rarity_strings[6] = {"Common", "Uncommon",  "Rare",
                            "Epic",   "Legendary", "Mythical"};
 
+// Thanks to: https://patorjk.com/software/taag/
 char *common_logos[NUM_COMMON_LOGOS] = {
     "            _        ____   _____ \n"
     "           | |      / __ \\ / ____|\n"
@@ -46,6 +47,7 @@ char *common_logos[NUM_COMMON_LOGOS] = {
     " ___ _| |___|     |   __|\n"
     "| .'| . | .'|  |  |__   |\n"
     "|__,|___|__,|_____|_____|\n"};
+
 char *uncommon_logos[NUM_UNCOMMON_LOGOS] = {
     "   ('-.     _ .-') _     ('-.                   .-')    \n"
     "  ( OO ).-.( (  OO) )   ( OO ).-.              ( OO ).  \n"
@@ -76,6 +78,7 @@ char *uncommon_logos[NUM_UNCOMMON_LOGOS] = {
     "     /:/  /       \\::/__/        /:/  /       \\::/  /       \\::/  /   "
     "\n"
     "     \\/__/         ~~            \\/__/         \\/__/         \\/__/\n"};
+
 char *rare_logos[NUM_RARE_LOGOS] = {
     " (`-')  _ _(`-')    (`-')  _             (`-').-> \n"
     " (OO ).-/( (OO ).-> (OO ).-/      .->    ( OO)_   \n"
@@ -99,6 +102,7 @@ char *rare_logos[NUM_RARE_LOGOS] = {
     "AAAAAD   DAAAAAO   O SSS  \n"
     "A   AD   DA   AO   O    S \n"
     "A   ADDDD A   A OOO SSSS\n"};
+
 char *epic_logos[NUM_EPIC_LOGOS] = {
     "            .___       ________    _________\n"
     "_____     __| _/____   \\_____  \\  /   _____/\n"
@@ -113,6 +117,7 @@ char *epic_logos[NUM_EPIC_LOGOS] = {
     "   {}o o{}      8(o o)(_)Ooo      {}o o{}        (o o)         (o o)     "
     "ooO--(_)--Ooo-ooO-(_)---Ooo----ooO--(_)--Ooo-ooO--(_)--Ooo-ooO--(_)--Ooo-"
     "\n"};
+
 char *legendary_logos[NUM_LEGENDARY_LOGOS] = {
     "                      )   (     \n"
     "        (          ( /(   )\\ )  \n"
@@ -214,6 +219,11 @@ void print_rarity(enum rarity r) {
 // I would never waste dev time...
 void print_random_logo() {
   uint32_t rand = random_uint32();
+
+  if (rand == UINT32_MAX) {
+    printf_("Advancement Get: Boot the Kernel an average of %d times!\n",
+            UINT32_MAX / 2);
+  }
 
   if (rand < (uint64_t)MYTHICAL_LOGO_CHANCE * UINT32_MAX / 100) {
     print_rarity(MYTHICAL);

@@ -17,6 +17,8 @@ static struct local_apic_r apic;
 
 uintptr_t apic_virt;
 
+extern pagemap_t *kernel_pagemap;
+
 struct local_apic_r get_apic() {
   uint64_t data = read_msr(IA32_APIC_BASE_MSR);
 
@@ -101,7 +103,7 @@ void bootstrap_apic() {
 
   apic_virt = (uint64_t)apic.apic_address + HIGHER_HALF;
 
-  if (!map_page(apic_virt, (uintptr_t)apic.apic_address,
+  if (!map_page(kernel_pagemap, apic_virt, (uintptr_t)apic.apic_address,
                 PTE_WRITABLE | PTE_NX | PTE_PCD)) {
     panic("Could not map APIC to virtual memory!");
   }

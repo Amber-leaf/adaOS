@@ -26,6 +26,6 @@ typedef struct pagemap {
 } pagemap_t;
 
 void setup_vmm();
-bool map_page(uintptr_t virt_addr, uintptr_t phys_addr, uint64_t flags);
+bool map_page(pagemap_t* pagemap, uintptr_t virt_addr, uintptr_t phys_addr, uint64_t flags);
 
 #endif

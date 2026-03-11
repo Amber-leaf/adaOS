@@ -9,6 +9,7 @@
 #include "memory/physical/header/pmm.h"
 #include "memory/virtual/header/vmm.h"
 #include "platform/x86_64/header/acpi.h"
+#include "platform/x86_64/header/ap.h"
 #include "platform/x86_64/header/apic.h"
 #include "platform/x86_64/header/cpuid.h"
 #include "platform/x86_64/header/gdt.h"
@@ -303,6 +304,10 @@ void kmain(void) {
   } else {
     k_test_pass("APIC Sleep");
   }
+
+  setup_multiproc();
+
+  k_ok("Setup Other CPUs");
 
   // if (setup_acpi()) {
   //  k_ok("Setup ACPI");

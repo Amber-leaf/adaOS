@@ -72,7 +72,8 @@ uintptr_t *get_or_allocate_next_level(uintptr_t *level, size_t index,
   return allocate_next_level(level, index, flags);
 }
 
-bool map_page(uintptr_t virt_addr, uintptr_t phys_addr, uint64_t flags) {
+bool map_page(pagemap_t *pagemap, uintptr_t virt_addr, uintptr_t phys_addr,
+              uint64_t flags) {
   virt_addr &= ~(PAGE_SIZE - 1);
   phys_addr &= ~(PAGE_SIZE - 1);
 
@@ -86,7 +87,7 @@ bool map_page(uintptr_t virt_addr, uintptr_t phys_addr, uint64_t flags) {
   if (flags & PTE_USER)
     alloc_flags |= PTE_USER;
 
-  uint64_t *pml4 = kernel_pagemap->top_level;
+  uint64_t *pml4 = pagemap->top_level;
 
   uint64_t *pdpt = get_or_allocate_next_level(pml4, pml4_index, alloc_flags);
   if (!pdpt)
@@ -228,7 +229,7 @@ void setup_vmm() {
       flags |= PTE_WRITABLE | PTE_NX;
     }
 
-    if (!map_page(p_virt, p_phys, flags)) {
+    if (!map_page(kernel_pagemap, p_virt, p_phys, flags)) {
       panic("Failed to map kernel page.");
     }
   }
@@ -258,7 +259,8 @@ void setup_vmm() {
       continue;
 
     for (uintptr_t p = map_base; p < map_top; p += PAGE_SIZE) {
-      if (!map_page(p + HIGHER_HALF, p, PTE_PRESENT | PTE_WRITABLE | PTE_NX)) {
+      if (!map_page(kernel_pagemap, p + HIGHER_HALF, p,
+                    PTE_PRESENT | PTE_WRITABLE | PTE_NX)) {
         panic("Failed to map HHDM page.");
       }
     }
@@ -275,7 +277,7 @@ void setup_vmm() {
   uintptr_t phys_addr = ((uintptr_t)fb->address - HIGHER_HALF);
 
   for (size_t i = 0; i < pages; i++) {
-    map_page(virt_addr, phys_addr,
+    map_page(kernel_pagemap, virt_addr, phys_addr,
              PTE_PRESENT | PTE_WRITABLE | PTE_PCD | PTE_PAT);
 
     asm volatile("invlpg (%0)" ::"r"(virt_addr) : "memory");
