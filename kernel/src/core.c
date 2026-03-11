@@ -22,6 +22,7 @@
 #include "util/header/panic.h"
 #include "util/header/print_lowlevel.h"
 #include "util/header/printf.h"
+#include "util/header/state.h"
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -70,8 +71,6 @@ __attribute__((
 
 #define APIC_SLEEP_TEST_MS 10
 #define APIC_SLEEP_TEST_TOLERANCE 1
-
-extern char *logos[];
 
 void *memcpy(void *restrict dest, const void *restrict src, size_t n) {
   uint8_t *restrict pdest = (uint8_t *restrict)dest;
@@ -197,6 +196,7 @@ void kmain(void) {
   }
 
   calculate_screen_constants(get_framebuffer());
+  set_state(FRAMEBUFFER_INITIALIZED, true);
 
   setup_random(get_boot_time() * 19650218UL);
 
@@ -205,6 +205,7 @@ void kmain(void) {
   if (!check_cpuid()) {
     k_err("CPUID not supported!");
   } else {
+    set_state(CPUID_SUPPORTED, true);
     k_log("CPU info: %s (%s).", get_cpu_name(), get_cpu_vendor());
     k_log("Hypervisor: %s", get_hypervisor_vendor());
   }
@@ -212,19 +213,18 @@ void kmain(void) {
   crlf();
 
   setup_gdt();
-
+  set_state(GDT_INITIALIZED, true);
   k_ok("GDT Init");
 
   setup_idt();
-
+  set_state(IDT_INITIALIZED, true);
   k_ok("IDT Init");
 
   setup_pic();
-
+  set_state(PIC_INITIALIZED, true);
   k_ok("Setup PIC");
 
   setup_pit();
-
   k_ok("Setup PIT as Bootstrap Timer");
 
   uint64_t old_time = get_pit_ticks();
@@ -241,6 +241,7 @@ void kmain(void) {
     play_sound(1000);
     pit_sleep_ms(40);
     sound_off();
+    set_state(PIT_INITIALIZED, true);
 #endif
   }
 
@@ -253,12 +254,12 @@ void kmain(void) {
   }
 
   setup_pmm();
-
   k_ok("Setup PMM");
 
   void *p = pp_alloc();
   if (p != NULL && (uintptr_t)p < HIGHER_HALF) {
     k_test_pass("PMM Pointer Sanity Check");
+    set_state(PMM_INITIALIZED, true);
   } else {
     k_test_fail("PMM Pointer was Bogus!");
   }
@@ -266,16 +267,16 @@ void kmain(void) {
   pp_free(p);
 
   setup_vmm();
-
+  set_state(VMM_INITIALIZED, true);
   k_ok("Setup VMM");
 
   setup_heap();
-
   k_ok("Setup Heap");
 
   p = kmalloc(PAGE_SIZE * 1.5); // Make sure we can allocate >PAGE_SIZE objects
   if (p != NULL && (uintptr_t)p > HIGHER_HALF) {
     k_test_pass("Heap Pointer Sanity Check");
+    set_state(HEAP_INITIALIZED, true);
   } else {
     k_test_fail("Heap Pointer was Bogus!");
   }
@@ -303,11 +304,8 @@ void kmain(void) {
         apic_difference - APIC_SLEEP_TEST_MS);
   } else {
     k_test_pass("APIC Sleep");
+    set_state(APIC_INITIALIZED, 0xf0);
   }
-
-  setup_multiproc();
-
-  k_ok("Setup Other CPUs");
 
   // if (setup_acpi()) {
   //  k_ok("Setup ACPI");
@@ -316,5 +314,6 @@ void kmain(void) {
   //}
 
   k_log("Halt");
+
   hcf();
 }

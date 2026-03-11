@@ -1,6 +1,7 @@
 #include "../platform/x86_64//header/pit.h"
 #include "header/print_lowlevel.h"
 #include "header/printf.h"
+#include "header/state.h"
 
 #define PLAIN_TEXT_COLOUR 0xb0b0b0
 
@@ -14,6 +15,8 @@
 #define OK
 #define WRN
 #define ERR
+
+#define TODO
 
 #define TEST_PASS
 #define TEST_FAIL
@@ -97,6 +100,22 @@ void k_err(char *format, ...) {
 #endif
 }
 
+void k_todo(char *format, ...) {
+#ifdef TODO
+  va_list va;
+  va_start(va, format);
+
+  k_puts("[");
+  set_text_colour(DBG_TEXT_COLOUR);
+  k_puts("   TODO~   ");
+  set_text_colour(PLAIN_TEXT_COLOUR);
+  k_puts("] ");
+  vprintf(format, va);
+  va_end(va);
+  crlf();
+#endif
+}
+
 void k_test_pass(char *format, ...) {
 #ifdef TEST_PASS
   va_list va;
@@ -115,7 +134,7 @@ void k_test_pass(char *format, ...) {
 
 void k_test_fail(char *format, ...) {
 #ifdef TEST_FAIL
-  if (get_pit_configured()) {
+  if (get_global_state().pit_initialized) {
     play_sound(TEST_FAIL_FREQUENCY);
   }
 
@@ -131,7 +150,7 @@ void k_test_fail(char *format, ...) {
   va_end(va);
   crlf();
 
-  if (get_pit_configured()) {
+  if (get_global_state().pit_initialized) {
     pit_sleep_ms(TEST_FAIL_HOLD);
     sound_off();
   }

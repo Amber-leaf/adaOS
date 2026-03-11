@@ -8,6 +8,8 @@ void k_ok(char *format, ...);
 void k_wrn(char *format, ...);
 void k_err(char *format, ...);
 
+void k_todo(char *format, ...);
+
 void k_test_pass(char *format, ...);
 void k_test_fail(char *format, ...);
 

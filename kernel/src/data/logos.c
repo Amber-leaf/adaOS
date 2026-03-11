@@ -110,13 +110,20 @@ char *epic_logos[NUM_EPIC_LOGOS] = {
     " / __ \\_/ /_/ | / __ \\_/    |    \\/        \\\n"
     "(____  /\\____ |(____  /\\_______  /_______  /\n"
     "     \\/      \\/     \\/         \\/        \\/\n",
-    "I love gambling!!\n", "This is supposed to be a logo??\n",
-    "   |                  ...         |                                      "
-    "   |.===.        o,\n"
-    "   ,(o o)        |.===.             xxx           >X<      \n"
-    "   {}o o{}      8(o o)(_)Ooo      {}o o{}        (o o)         (o o)     "
-    "ooO--(_)--Ooo-ooO-(_)---Ooo----ooO--(_)--Ooo-ooO--(_)--Ooo-ooO--(_)--Ooo-"
-    "\n"};
+    "I love gambling!!\n", "Wait, this was supposed to be a logo??\n",
+    "                                                             \n"
+    "          _______                                            \n"
+    "          \\  ___ `'.                                         \n"
+    "           ' |--.\\  \\                                        \n"
+    "           | |    \\  '              .-''` ''-.               \n"
+    "    __     | |     |  '    __     .'          '.             \n"
+    " .:--.'.   | |     |  | .:--.'.  /              `       _    \n"
+    "/ |   \\ |  | |     ' .'/ |   \\ |'                '    .' |   \n"
+    "`\" __ | |  | |___.' /' `\" __ | ||         .-.    |   .   | / \n"
+    " .'.''| | /_______.'/   .'.''| |.        |   |   . .'.'| |// \n"
+    "/ /   | |_\\_______|/   / /   | |_.       '._.'  /.'.'.-'  /  \n"
+    "\\ \\._,\\ '/             \\ \\._,\\ '/ '._         .' .'   \\_.'   \n"
+    " `--'  `\"               `--'  `\"     '-....-'`\n"};
 
 char *legendary_logos[NUM_LEGENDARY_LOGOS] = {
     "                      )   (     \n"
@@ -220,11 +227,6 @@ void print_rarity(enum rarity r) {
 void print_random_logo() {
   uint32_t rand = random_uint32();
 
-  if (rand == UINT32_MAX) {
-    printf_("Congrats, you've booted the Kernel an average of %d times!\n",
-            UINT32_MAX / 2);
-  }
-
   if (rand < (uint64_t)MYTHICAL_LOGO_CHANCE * UINT32_MAX / 100) {
     print_rarity(MYTHICAL);
   } else if (rand < (uint64_t)LEGENDARY_LOGO_CHANCE * UINT32_MAX / 100) {
@@ -237,5 +239,13 @@ void print_random_logo() {
     print_rarity(UNCOMMON);
   } else {
     print_rarity(COMMON);
+  }
+
+  set_text_colour(0xffffff);
+
+  if (rand == UINT32_MAX) {
+    printf_(
+        "\n\nCongrats! On average, you've booted the Kernel %d times!\n\n\n",
+        UINT32_MAX / 2);
   }
 }
