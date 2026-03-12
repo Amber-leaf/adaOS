@@ -8,6 +8,7 @@
 #include "../../header/core.h"
 #include "../../util/header/log.h"
 #include "../../util/header/panic.h"
+#include "../../util/header/state.h"
 #include "../header/memmap.h"
 #include "../physical/header/pmm.h"
 #include "header/vmm.h"
@@ -66,9 +67,15 @@ uintptr_t *allocate_next_level(uintptr_t *current_level_virt, size_t index,
 
 uintptr_t *get_or_allocate_next_level(uintptr_t *level, size_t index,
                                       uint64_t flags) {
-  if (level[index] & PTE_PRESENT)
+  if (level[index] & PTE_PRESENT) {
+    if (get_global_state().heap_initialized) {
+      k_debug("Get in get_or_allocate");
+    }
     return (uintptr_t *)(PTE_GET_ADDR(level[index]) + HIGHER_HALF);
-
+  }
+  if (get_global_state().heap_initialized) {
+    k_debug("allocate in get_or_allocate");
+  }
   return allocate_next_level(level, index, flags);
 }
 
@@ -76,6 +83,10 @@ bool map_page(pagemap_t *pagemap, uintptr_t virt_addr, uintptr_t phys_addr,
               uint64_t flags) {
   virt_addr &= ~(PAGE_SIZE - 1);
   phys_addr &= ~(PAGE_SIZE - 1);
+
+  if (get_global_state().heap_initialized) {
+    k_debug("mapping v%p -> p%p", virt_addr, phys_addr);
+  }
 
   size_t pml4_index = (virt_addr >> 39) & 0x1FF;
   size_t pdpt_index = (virt_addr >> 30) & 0x1FF;
@@ -260,7 +271,7 @@ void setup_vmm() {
 
     for (uintptr_t p = map_base; p < map_top; p += PAGE_SIZE) {
       if (!map_page(kernel_pagemap, p + HIGHER_HALF, p,
-                    PTE_PRESENT | PTE_WRITABLE | PTE_NX)) {
+                    PTE_PRESENT | PTE_WRITABLE)) {
         panic("Failed to map HHDM page.");
       }
     }

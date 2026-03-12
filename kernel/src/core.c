@@ -274,6 +274,7 @@ void kmain(void) {
   k_ok("Setup Heap");
 
   p = kmalloc(PAGE_SIZE * 1.5); // Make sure we can allocate >PAGE_SIZE objects
+
   if (p != NULL && (uintptr_t)p > HIGHER_HALF) {
     k_test_pass("Heap Pointer Sanity Check");
     set_state(HEAP_INITIALIZED, true);
@@ -307,11 +308,7 @@ void kmain(void) {
     set_state(APIC_INITIALIZED, 0xf0);
   }
 
-  // if (setup_acpi()) {
-  //  k_ok("Setup ACPI");
-  //} else {
-  // k_err("APIC Setup Failed! Things may break!");
-  //}
+  bootstrap_acpi();
 
   k_log("Halt");
 

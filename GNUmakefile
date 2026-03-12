@@ -2,7 +2,7 @@
 .SUFFIXES:
 
 # Default user QEMU flags. These are appended to the QEMU command calls.
-QEMUFLAGS := -m 2G -M accel=tcg,smm=off -no-reboot -no-shutdown -audiodev pa,id=speaker -machine pcspk-audiodev=speaker -smp sockets=1,cores=2,threads=1 #-d int
+QEMUFLAGS := -m 2G -M accel=tcg,smm=off -no-reboot -no-shutdown -audiodev pa,id=speaker -machine pcspk-audiodev=speaker -smp sockets=1,cores=1,threads=1 -d int --enable-kvm
 
 override IMAGE_NAME := adaOS
 
@@ -13,6 +13,8 @@ HOST_CPPFLAGS :=
 HOST_LDFLAGS :=
 HOST_LIBS :=
 
+QEMU_PATH := "qemu-system-x86_64" 
+
 .PHONY: all
 all: $(IMAGE_NAME).iso
 
@@ -21,7 +23,7 @@ all-hdd: $(IMAGE_NAME).hdd
 
 .PHONY: run
 run: $(IMAGE_NAME).iso
-	qemu-system-x86_64 \
+	$(QEMU_PATH) \
 		-M q35 \
 		-cdrom $(IMAGE_NAME).iso \
 		-boot d \
@@ -29,7 +31,7 @@ run: $(IMAGE_NAME).iso
 
 .PHONY: run-uefi
 run-uefi: ovmf/ovmf-code-x86_64.fd $(IMAGE_NAME).iso
-	qemu-system-x86_64 \
+	$(QEMU_PATH) \
 		-M q35 \
 		-drive if=pflash,unit=0,format=raw,file=ovmf/ovmf-code-x86_64.fd,readonly=on \
 		-cdrom $(IMAGE_NAME).iso \
@@ -38,14 +40,14 @@ run-uefi: ovmf/ovmf-code-x86_64.fd $(IMAGE_NAME).iso
 
 .PHONY: run-hdd
 run-hdd: $(IMAGE_NAME).hdd
-	qemu-system-x86_64 \
+	$(QEMU_PATH) \
 		-M q35 \
 		-hda $(IMAGE_NAME).hdd \
 		$(QEMUFLAGS)
 
 .PHONY: run-hdd-uefi
 run-hdd-uefi: ovmf/ovmf-code-x86_64.fd $(IMAGE_NAME).hdd
-	qemu-system-x86_64 \
+	$(QEMU_PATH) \
 		-M q35 \
 		-drive if=pflash,unit=0,format=raw,file=ovmf/ovmf-code-x86_64.fd,readonly=on \
 		-hda $(IMAGE_NAME).hdd \
@@ -57,7 +59,7 @@ ovmf/ovmf-code-x86_64.fd:
 
 limine/limine:
 	rm -rf limine
-	git clone https://github.com/limine-bootloader/limine.git --branch=v9.x-binary --depth=1
+	git clone https://codeberg.org/Limine/Limine.git limine --branch=v10.x-binary --depth=1
 	$(MAKE) -C limine \
 		CC="$(HOST_CC)" \
 		CFLAGS="$(HOST_CFLAGS)" \

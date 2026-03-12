@@ -143,4 +143,7 @@ void print_free_ram() {
     panic("Insufficient memory. adaOS probably needs \nmore than 0.5GiB of "
           "memory free.");
   }
+
+  // debug_print_mem_map();
+  // hcf();
 }

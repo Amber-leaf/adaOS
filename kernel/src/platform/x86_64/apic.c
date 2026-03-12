@@ -58,6 +58,15 @@ uint32_t read_register(uintptr_t offset) {
   return ((volatile uint32_t *)(apic_virt + offset))[0];
 }
 
+void write_icr(icr_t isr, uint32_t apic_id) {
+  if (apic_id && isr.destination_type > 0) {
+    k_wrn("APIC ID has no effect with destination types greater than 0!");
+  }
+  write_register(APIC_ICR_HIGH, apic_id << 24);
+
+  write_register(APIC_ICR_LOW, *(uint32_t *)&isr);
+}
+
 void apic_start_timer() {
   write_register(APIC_TIMER_DIVIDE_CONFIG, 0x3);
   write_register(APIC_TIMER_INITIAL_COUNT, 0xFFFFFFFF);
@@ -95,10 +104,18 @@ void apic_sleep_ms(uint32_t ms) {
   }
 }
 
+void send_ipi(uint32_t apic_id, uint8_t isr_index) {
+  icr_t icr = {
+      isr_index, 0, 0, 0, 0, 0, 1, 0, 0,
+  };
+
+  write_icr(icr, apic_id);
+}
+
 void bootstrap_apic() {
   struct local_apic_r apic = get_apic();
 
-  k_debug("mapping APIC to v%p from p%p", apic.apic_address + HIGHER_HALF,
+  k_debug("mapping bs LAPIC to v%p from p%p", apic.apic_address + HIGHER_HALF,
           apic.apic_address);
 
   apic_virt = (uint64_t)apic.apic_address + HIGHER_HALF;
