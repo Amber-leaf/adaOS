@@ -79,9 +79,10 @@ typedef struct __attribute__((packed)) icr {
 } icr_t;
 
 void bootstrap_apic();
-void send_eio();
 
 void apic_sleep_ms(uint32_t ms);
+
+void send_eio();
 
 void send_ipi(uint32_t apic_id, uint8_t isr_index);
 

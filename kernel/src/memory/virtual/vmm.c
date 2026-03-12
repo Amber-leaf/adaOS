@@ -68,13 +68,7 @@ uintptr_t *allocate_next_level(uintptr_t *current_level_virt, size_t index,
 uintptr_t *get_or_allocate_next_level(uintptr_t *level, size_t index,
                                       uint64_t flags) {
   if (level[index] & PTE_PRESENT) {
-    if (get_global_state().heap_initialized) {
-      k_debug("Get in get_or_allocate");
-    }
     return (uintptr_t *)(PTE_GET_ADDR(level[index]) + HIGHER_HALF);
-  }
-  if (get_global_state().heap_initialized) {
-    k_debug("allocate in get_or_allocate");
   }
   return allocate_next_level(level, index, flags);
 }
@@ -84,9 +78,9 @@ bool map_page(pagemap_t *pagemap, uintptr_t virt_addr, uintptr_t phys_addr,
   virt_addr &= ~(PAGE_SIZE - 1);
   phys_addr &= ~(PAGE_SIZE - 1);
 
-  if (get_global_state().heap_initialized) {
-    k_debug("mapping v%p -> p%p", virt_addr, phys_addr);
-  }
+  // if (get_global_state().heap_initialized) {
+  // k_debug("mapping v%p -> p%p", virt_addr, phys_addr);
+  //}
 
   size_t pml4_index = (virt_addr >> 39) & 0x1FF;
   size_t pdpt_index = (virt_addr >> 30) & 0x1FF;
