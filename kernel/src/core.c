@@ -310,6 +310,8 @@ void kmain(void) {
 
   bootstrap_acpi();
 
+  k_ok("Parsed Basic ACPI Info");
+
   k_log("Halt");
 
   hcf();

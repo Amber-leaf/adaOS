@@ -53,6 +53,8 @@ uint32_t local_apic_address_overides_num = 0;
 struct madt_type_9 *local_x2apics;
 uint32_t local_x2apic_num = 0;
 
+uintptr_t facs_ptr;
+
 struct limine_rsdp_response *get_rsdp() {
   struct limine_rsdp_response *rsdp = rsdp_request.response;
 
@@ -90,7 +92,6 @@ struct sdt_header *find_table(void *root_sdt, char signature[4]) {
   struct rsdt *rsdt = (struct rsdt *)root_sdt;
 
   uint32_t entries = (rsdt->h.length - sizeof(rsdt->h)) / sizeof(uint32_t);
-  k_debug("entries: %d", entries);
 
   for (uint32_t i = 0; i < entries; i++) {
     uintptr_t phys = (uintptr_t)rsdt->outgoing_pointers[i];
@@ -100,7 +101,7 @@ struct sdt_header *find_table(void *root_sdt, char signature[4]) {
 
     struct sdt_header *h = (struct sdt_header *)vert;
 
-    if (memcmp(h->signature, signature, 4) == 0) {
+    if (!memcmp(h->signature, signature, 4)) {
       return h;
     }
   }
@@ -144,12 +145,18 @@ void parse_madt(sdt_header_t *madt_sdt_header) {
           "serial.");
   }
 
-  size_t i = 0;
+  size_t i = 0; // TODO: this should really be a per-type index, but the ACPI
+                // speck mandates that they go in order so its probably fine...
+  uint8_t last_type;
+
   for (size_t offset = MADT_RECORD_OFFSET; offset < madt_sdt_header->length;) {
     struct madt_record_header header =
         *(struct madt_record_header *)(header_ptr + offset);
 
-    k_debug("type: %s", MADT_TYPES_TO_STRING[header.type]);
+    if (last_type != header.type) {
+      i = 0;
+    }
+    last_type = header.type;
 
     switch (header.type) {
     case 0:
@@ -157,44 +164,80 @@ void parse_madt(sdt_header_t *madt_sdt_header) {
           *(struct madt_type_0 *)(header_ptr + offset +
                                   sizeof(struct madt_record_header));
       local_apic_num++;
+      k_debug("Local APIC %d:", local_apics[i].apic_id);
+      k_debug("- Processor ID: %d", local_apics[i].processor_id);
+      k_debug("- Flags: 0x%x", local_apics[i].flags);
+
       break;
     case 1:
       io_apics[i] = *(struct madt_type_1 *)(header_ptr + offset +
                                             sizeof(struct madt_record_header));
       io_apic_num++;
+      k_debug("IO APIC %d:", io_apics[i].io_apic_id);
+      k_debug("- ID: %d", io_apics[i].io_apic_id);
+      k_debug("- IOREGSEL: %p", io_apics[i].io_apic_address);
+      k_debug("- Global System Int Base: %p",
+              io_apics[i].global_system_int_base);
+
       break;
     case 2:
       io_apic_source_overrides[i] =
           *(struct madt_type_2 *)(header_ptr + offset +
                                   sizeof(struct madt_record_header));
       io_apic_source_override_num++;
+      k_debug("IO APIC Souce Overide %d:", i);
+      k_debug("- Bus Source: %d", io_apic_source_overrides[i].bus_source);
+      k_debug("- IRQ Source: %d", io_apic_source_overrides[i].irq_source);
+      k_debug("- Flags: 0x%x", io_apic_source_overrides[i].flags);
+      k_debug("- Global System Int Offset: 0x%x",
+              io_apic_source_overrides[i].global_system_int);
+
       break;
     case 3:
       io_apic_nmi_sources[i] =
           *(struct madt_type_3 *)(header_ptr + offset +
                                   sizeof(struct madt_record_header));
       io_apic_nmi_source_num++;
+      k_debug("IO APIC NMI Source %d:", i);
+      k_debug("- NMI Source: %d", io_apic_nmi_sources[i].nmi_source);
+      k_debug("- Flags: 0x%x", io_apic_nmi_sources[i].flags);
+      k_debug("- Global System Int Offset: 0x%x",
+              io_apic_nmi_sources[i].global_system_int);
+
       break;
     case 4:
       io_apic_nmis[i] =
           *(struct madt_type_4 *)(header_ptr + offset +
                                   sizeof(struct madt_record_header));
       io_apic_nmi_num++;
+      k_debug("IO APIC NMI %d:", i);
+      k_debug("- Proccesor ID: %d", io_apic_nmis[i].acpi_processor_id);
+      k_debug("- Flags: 0x%x", io_apic_nmis[i].flags);
+      k_debug("- LINT: 0x%x", io_apic_nmis[i].lint);
+
       break;
     case 5:
       local_apic_address_overides[i] =
           *(struct madt_type_5 *)(header_ptr + offset +
                                   sizeof(struct madt_record_header));
       local_apic_address_overides_num++;
+      k_debug("Local APIC Address Overide %d:", i);
+      k_debug(" - Real Local APIC Physical Address: %p",
+              local_apic_address_overides[i].lapic_phys);
       break;
     case 9:
       local_x2apics[i] =
           *(struct madt_type_9 *)(header_ptr + offset +
                                   sizeof(struct madt_record_header));
       local_x2apic_num++;
+      k_debug("x2 APIC %d", local_x2apics[i].apic_id);
+      k_debug("- Processor ID: %d", local_x2apics[i].processor_id);
+      k_debug("- Flags: 0x%x", local_x2apics[i].flags);
+
       break;
     default:
-      k_wrn("Unkown MADT type %d!", header.type);
+      k_wrn("Unkown MADT type %d (%s)!", header.type,
+            MADT_TYPES_TO_STRING[header.type]);
       break;
     }
 
@@ -202,18 +245,8 @@ void parse_madt(sdt_header_t *madt_sdt_header) {
     i++;
   }
 
-  k_debug("overides: %d", local_apic_address_overides_num);
-
   if (local_apic_address_overides_num > 0) {
-    panic("TODO: Handel LAPIC address overides!");
-  }
-
-  for (uint32_t i = 0; i < local_apic_num; i++) {
-    struct madt_type_0 lapic = local_apics[i];
-
-    k_debug("apic id: %d", lapic.apic_id);
-    k_debug("proc id: %d", lapic.processor_id);
-    k_debug("flags: %X", lapic.flags);
+    panic("TODO: Use LAPIC address overides!");
   }
 }
 
@@ -242,10 +275,10 @@ void bootstrap_acpi() {
   }
 
   if (rsdp_h.oem_revision != 0) {
-    k_wrn("Only RSDP is supported & tested! Things might break.");
+    k_wrn("Only RSDP rev 0 is supported & tested! Things might break.");
   }
 
-  const uint8_t *bytes = (const uint8_t *)&rsdp_h;
+  uint8_t *bytes = (uint8_t *)&rsdp_h;
   uint32_t sum = 0;
 
   for (size_t i = 0; i < sizeof(rsdp_h); i++) {
@@ -278,15 +311,6 @@ void bootstrap_acpi() {
 
   parse_madt(madt_sdt_header);
 
-  for (uint32_t i = 0; i < io_apic_num; i++) {
-    struct madt_type_1 io_apic = io_apics[i];
-
-    // TODO: bugged?
-    k_debug("io apic id: %d", io_apic.io_apic_id);
-    k_debug("io apic addr: %p", io_apic.io_apic_address);
-    k_debug("global_system_int_base: %x", io_apic.global_system_int_base);
-  }
-
   sdt_header_t *fadt_sdt_header = find_table(rsdt_header, "FACP");
   if (fadt_sdt_header == NULL) {
     panic("Could not find FADT table!");
@@ -294,9 +318,26 @@ void bootstrap_acpi() {
 
   checksum_header(fadt_sdt_header);
 
-  void *header_ptr = ((void *)fadt_sdt_header);
+  struct fadt *fadt = (struct fadt *)(uintptr_t)((void *)fadt_sdt_header);
 
-  struct fadt *fadt = (struct fadt *)(uintptr_t)header_ptr;
+  if (fadt->smi_command_port != 0) {
+    k_todo("Support SMI Command / System Management Mode");
+  }
 
-  k_debug("sci: %d", fadt->sci_interrupt);
+  if (fadt->firmware_ctrl != 0) {
+    facs_ptr = fadt->firmware_ctrl;
+  } else if (fadt->x_firmware_control != 0) {
+    k_wrn("Uing X_FACS, this might not work!");
+    facs_ptr = fadt->x_firmware_control;
+  } else {
+    panic("Something went horribly wrong parsing FADT, FACS pointer was NULL!");
+  }
+
+  k_debug("firmware ctrl: %p", fadt->firmware_ctrl);
+  k_debug("smi cmd port: %p", fadt->smi_command_port);
+
+  k_debug("dsdt ptr: %p", fadt->dsdt);
+
+  // TODO: parse DSDT using ACPICA. (or write parser i guess but that looks like
+  // hell lol)
 }

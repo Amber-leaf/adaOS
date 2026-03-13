@@ -30,7 +30,7 @@ struct local_apic_r get_apic() {
   apic.apic_enabled = (data >> 11) & 1;    // APIC globally enabled?
   apic.apic_address = (void *)(data & ~0xFFFULL); // Base address
 
-  k_debug("bootstrap: %d, x2apic: %d, apic enabled: %d, apic addr: %016lx",
+  k_debug("bootstrap: %d, x2apic: %d, apic enabled: %d, apic addr: %p",
           apic.bootstrap_processor, apic.x2_apic_enabled, apic.apic_enabled,
           apic.apic_address);
 
@@ -62,6 +62,7 @@ void write_icr(icr_t isr, uint32_t apic_id) {
   if (apic_id && isr.destination_type > 0) {
     k_wrn("APIC ID has no effect with destination types greater than 0!");
   }
+
   write_register(APIC_ICR_HIGH, apic_id << 24);
 
   write_register(APIC_ICR_LOW, *(uint32_t *)&isr);
@@ -78,8 +79,7 @@ void apic_start_timer() {
   uint32_t ticks_1ms =
       (0xFFFFFFFF - read_register(APIC_TIMER_CURRENT_COUNT)) / 600;
 
-  k_debug("ticks in 1ms: %d, therefore, apic timer is at %dhz", ticks_1ms,
-          ticks_1ms * 1000);
+  k_debug("Estimated bus frequency: %dMhz", ticks_1ms);
 
   write_register(APIC_LVT_TIMER, 0xf1 | 0x20000);
   write_register(APIC_TIMER_DIVIDE_CONFIG, 0x3);
@@ -104,7 +104,9 @@ void apic_sleep_ms(uint32_t ms) {
   }
 }
 
+// FIXME: Not working
 void send_ipi(uint32_t apic_id, uint8_t isr_index) {
+  k_todo("Fix send_ipi!");
   icr_t icr = {
       isr_index, 0, 0, 0, 0, 0, 1, 0, 0,
   };
@@ -141,9 +143,9 @@ void bootstrap_apic() {
 
   apic_start_timer();
 
-  // TODO:
-  // write_lvt_entry(APIC_LVT_THERMAL, 0xf2);
-  // write_lvt_entry(APIC_LVT_ERROR, 0xf6);
+  write_lvt_entry(APIC_LVT_THERMAL, 0xf2);
+  write_lvt_entry(APIC_LVT_ERROR, 0xf6);
+  // TODO: the rest of these
 }
 
 void send_eio() { write_register(APIC_EOI, 0); }
