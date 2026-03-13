@@ -150,7 +150,7 @@ int64_t get_boot_time(void) {
   return bootime_request.response->timestamp;
 }
 
-static char *version_string = "0.0.4";
+static char *version_string = "0.0.5";
 
 void print_banner(void) {
   set_text_colour(0xe6a6a1);
@@ -242,6 +242,7 @@ void kmain(void) {
     pit_sleep_ms(40);
     sound_off();
     set_state(PIT_INITIALIZED, true);
+    set_state(PIT_TIMER_RUNNING, true);
 #endif
   }
 

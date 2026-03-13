@@ -3,6 +3,7 @@
 #include "../../memory/virtual/header/vmm.h"
 #include "../../util/header/log.h"
 #include "../../util/header/panic.h"
+#include "../../util/header/state.h"
 
 #include "../../interupt/header/apic_timer.h"
 
@@ -86,6 +87,8 @@ void apic_start_timer() {
   write_register(APIC_TIMER_INITIAL_COUNT, ticks_1ms);
 
   unmask_irq(0);
+
+  set_state(PIT_TIMER_RUNNING, false);
 }
 
 void apic_sleep_ms(uint32_t ms) {

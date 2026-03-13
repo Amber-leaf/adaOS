@@ -1,4 +1,6 @@
+#include "../platform/x86_64//header/apic.h"
 #include "../platform/x86_64//header/pit.h"
+
 #include "header/print_lowlevel.h"
 #include "header/printf.h"
 #include "header/state.h"
@@ -151,7 +153,11 @@ void k_test_fail(char *format, ...) {
   crlf();
 
   if (get_global_state().pit_initialized) {
-    pit_sleep_ms(TEST_FAIL_HOLD);
+    if (get_global_state().pit_timer_running) {
+      pit_sleep_ms(TEST_FAIL_HOLD);
+    } else if (get_global_state().apic_initialized == 0xf0) {
+      apic_sleep_ms(TEST_FAIL_HOLD);
+    }
     sound_off();
   }
 #endif
