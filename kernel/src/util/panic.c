@@ -10,7 +10,19 @@
 #define PANIC_SOUND_FREQUENCY 400
 #define PANIC_BEEPS 6
 
-void __attribute__((noreturn)) panic(char *msg) { // todo
+uint8_t panics = 0;
+
+void __attribute__((noreturn))
+panic(char *msg) { // TODO: add proper cleanup and tracing.
+  if (panics > 0) {
+    k_err("Something is super fucky, panic panicked %d time(s). yay osdev >:3",
+          panics);
+    hcf(); // just stop, i dont even trust the pit to play sound if we get here
+           // here.
+  }
+
+  panics++;
+
   k_err("Unrecoverable error: %s Halt.", msg);
 
   if (get_global_state().pit_initialized) {

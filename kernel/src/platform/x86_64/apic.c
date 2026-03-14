@@ -146,9 +146,10 @@ void bootstrap_apic() {
 
   apic_start_timer();
 
-  write_lvt_entry(APIC_LVT_THERMAL, 0xf2);
-  write_lvt_entry(APIC_LVT_ERROR, 0xf6);
-  // TODO: the rest of these
+  // FIXME: These break serial for some reason.
+  // write_lvt_entry(APIC_LVT_THERMAL, 0xf2);
+  // write_lvt_entry(APIC_LVT_ERROR, 0xf6);
+  //  TODO: the rest of these
 }
 
 void send_eio() { write_register(APIC_EOI, 0); }

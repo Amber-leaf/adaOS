@@ -1,3 +1,4 @@
+#include "../driver/header/rs232.h"
 #include "../header/core.h"
 #include "../platform/x86_64/header/apic.h"
 #include "../platform/x86_64/header/port.h"
@@ -44,6 +45,8 @@ void unimplemented_abort(char *msg, struct cpu_status *context) {
 void exception_handler(struct cpu_status *context) {
   if (context->vector_number > 0xf0) {
     send_eio();
+  } else {
+    outb(0x20, 0x20);
   }
 
   switch (context->vector_number) {
@@ -140,6 +143,10 @@ void exception_handler(struct cpu_status *context) {
   case 0x20:
     pit_irq();
     break;
+  case 0x24:
+    serial_writeb_blocking(
+        serial_readb_unsafe_nonblocking()); // For now just echo.
+    break;
   case 0x70:
     unimplemented_fault("Syscall", context);
     break;
@@ -168,6 +175,4 @@ void exception_handler(struct cpu_status *context) {
     print_cpu_status(context);
     break;
   }
-
-  outb(0x20, 0x20);
 }

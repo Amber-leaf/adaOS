@@ -1,6 +1,7 @@
 #include "header/core.h"
 #include "crypt/header/random.h"
 #include "data/logos.h"
+#include "driver/header/rs232.h"
 #include "header/limine.h"
 #include "interupt/header/apic_timer.h"
 #include "interupt/header/pit_handler.h"
@@ -224,6 +225,9 @@ void kmain(void) {
   setup_pic();
   set_state(PIC_INITIALIZED, true);
   k_ok("Setup PIC");
+
+  setup_serial(19200);
+  k_ok("Setup Serial");
 
   setup_pit();
   k_ok("Setup PIT as Bootstrap Timer");

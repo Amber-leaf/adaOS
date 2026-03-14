@@ -1,5 +1,7 @@
+#include "../driver/header/rs232.h"
 #include "../header/core.h"
 #include "../header/limine.h"
+
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -48,6 +50,8 @@ void scroll(uint8_t lines) {
     // Clear last line
     uint32_t *last = fb_ptr + (cursor_y_max * 8 * font_size) * pitch;
     memset(last, 0x00, width * 4 * 8 * font_size);
+
+    serial_writeb_blocking('\n');
   }
 }
 
@@ -58,6 +62,7 @@ void nl_cursor(void) {
   } else {
     cursor_x = 0;
     cursor_y++;
+    serial_writeb_blocking('\n');
   }
 }
 
@@ -76,6 +81,8 @@ void cursor_goto(uint32_t x, uint32_t y) {
 
   cursor_x = x;
   cursor_y = y;
+
+  // TODO: Serial cursor goto.
 }
 
 void print_bitmap(uint64_t bitmap, uint32_t x, uint32_t y) {
@@ -106,6 +113,8 @@ void clear(void) {
   memset(fb_ptr, 0x00, bytes_per_screen);
 
   cursor_x = cursor_y = 0;
+
+  serial_write_string("\n\n\n\n--- CLEAR ---\n\n\n\n");
 }
 
 uint32_t calculate_y(void) { return cursor_y * 8 * font_size; }
@@ -129,10 +138,14 @@ void k_putc(uint16_t c) {
     uint64_t char_bitmap = font[c];
     if (c > sizeof(font) / (sizeof(font[0]) / 2))
       char_bitmap = MISSING;
+    else {
+      print_bitmap(char_bitmap, calculate_x(), calculate_y());
+      if (c < 128) {
+        serial_writeb_blocking(c);
+      }
 
-    print_bitmap(char_bitmap, calculate_x(), calculate_y());
-
-    advance_cursor();
+      advance_cursor();
+    }
   }
 }
 
@@ -171,6 +184,7 @@ void k_puti(uint32_t n) {
       char_bitmap = MISSING;
 
     print_bitmap(char_bitmap, calculate_x(), calculate_y());
+    serial_writeb_blocking(digit);
 
     advance_cursor();
 

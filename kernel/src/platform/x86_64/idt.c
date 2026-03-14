@@ -32,6 +32,7 @@ void setup_idt(void) {
   }
 
   extern void isr_0x20();
+  extern void isr_0x24();
   extern void isr_0x70();
   extern void isr_0xf0();
   extern void isr_0xf1();
@@ -42,6 +43,7 @@ void setup_idt(void) {
   extern void isr_0xf6();
 
   idt_set_descriptor(0x20, isr_0x20, 0x8E);
+  idt_set_descriptor(0x24, isr_0x24, 0x8E);
   idt_set_descriptor(0x70, isr_0x70, 0x8E);
   idt_set_descriptor(0xf0, isr_0xf0, 0x8E);
   idt_set_descriptor(0xf1, isr_0xf1, 0x8E);
