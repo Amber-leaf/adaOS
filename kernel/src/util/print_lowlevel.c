@@ -5,15 +5,15 @@
 
 #define MISSING font[0]
 
-static uint32_t cursorx = 0;
-static uint32_t cursory = 0;
+static uint32_t cursor_x = 0;
+static uint32_t cursor_y = 0;
 static uint32_t on_colour = 0xffffff;
 static uint32_t off_colour = 0x000000;
 static uint8_t font_size = 2;
 static uint8_t skew = 0;
 
-static uint32_t cursorx_max;
-static uint32_t cursory_max;
+static uint32_t cursor_x_max;
+static uint32_t cursor_y_max;
 static uint32_t bytes_per_line;
 static uint32_t bytes_per_screen;
 static uint32_t height;
@@ -27,11 +27,11 @@ void calculate_screen_constants(struct limine_framebuffer *fb) {
   width = fb->width;
   height = fb->height;
 
-  cursorx_max = width / (8 * font_size) - 1;
-  cursory_max = height / (8 * font_size) - 1;
+  cursor_x_max = width / (8 * font_size) - 1;
+  cursor_y_max = height / (8 * font_size) - 1;
 
   bytes_per_line = width * (8 * font_size) * 4;
-  bytes_per_screen = bytes_per_line * (cursory_max + 1);
+  bytes_per_screen = bytes_per_line * (cursor_y_max + 1);
 
   pitch = fb->pitch / 4;
 
@@ -40,33 +40,42 @@ void calculate_screen_constants(struct limine_framebuffer *fb) {
 
 void scroll(uint8_t lines) {
   for (int n = 0; n < lines; n++) {
-    for (uint32_t i = 0; i < cursory_max; i++) {
+    for (uint32_t i = 0; i < cursor_y_max; i++) {
       uint32_t *dst = fb_ptr + (i * 8 * font_size) * pitch;
       uint32_t *src = fb_ptr + ((i + 1) * 8 * font_size) * pitch;
       memcpy(dst, src, width * 4 * 8 * font_size);
     }
     // Clear last line
-    uint32_t *last = fb_ptr + (cursory_max * 8 * font_size) * pitch;
+    uint32_t *last = fb_ptr + (cursor_y_max * 8 * font_size) * pitch;
     memset(last, 0x00, width * 4 * 8 * font_size);
   }
 }
 
 void nl_cursor(void) {
-  if (cursory + 1 > cursory_max) {
+  if (cursor_y + 1 > cursor_y_max) {
     scroll(1);
-    cursorx = 0;
+    cursor_x = 0;
   } else {
-    cursorx = 0;
-    cursory++;
+    cursor_x = 0;
+    cursor_y++;
   }
 }
 
 void advance_cursor(void) {
-  if (cursorx + 1 > cursorx_max) {
+  if (cursor_x + 1 > cursor_x_max) {
     nl_cursor();
   } else {
-    cursorx++;
+    cursor_x++;
   }
+}
+
+void cursor_goto(uint32_t x, uint32_t y) {
+  if (x > cursor_x_max || y > cursor_y_max) {
+    return;
+  }
+
+  cursor_x = x;
+  cursor_y = y;
 }
 
 void print_bitmap(uint64_t bitmap, uint32_t x, uint32_t y) {
@@ -96,23 +105,22 @@ void set_skew(uint8_t n) { skew = n; }
 void clear(void) {
   memset(fb_ptr, 0x00, bytes_per_screen);
 
-  cursorx = cursory = 0;
+  cursor_x = cursor_y = 0;
 }
 
-uint32_t calculate_y(void) { return cursory * 8 * font_size; }
+uint32_t calculate_y(void) { return cursor_y * 8 * font_size; }
 
-uint32_t calculate_x(void) { return cursorx * 8 * font_size; }
+uint32_t calculate_x(void) { return cursor_x * 8 * font_size; }
 
 void k_putc(uint16_t c) {
   bool should_print = true;
 
   switch (c) {
-
   case 0x0A:
     nl_cursor();
     __attribute__((fallthrough));
   case 0x0D:
-    cursorx = 0;
+    cursor_x = 0;
     should_print = false;
     break;
   }
@@ -139,7 +147,7 @@ void k_puts(const char *s) {
       nl_cursor();
       __attribute__((fallthrough));
     case 0x0D:
-      cursorx = 0;
+      cursor_x = 0;
       break;
     default:
       k_putc(s[i]);

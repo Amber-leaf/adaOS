@@ -14,6 +14,7 @@
 #include "platform/x86_64/header/cpuid.h"
 #include "platform/x86_64/header/gdt.h"
 #include "platform/x86_64/header/idt.h"
+#include "platform/x86_64/header/ioapic.h"
 #include "platform/x86_64/header/msr.h"
 #include "platform/x86_64/header/pic.h"
 #include "platform/x86_64/header/pit.h"
@@ -312,6 +313,10 @@ void kmain(void) {
   bootstrap_acpi();
 
   k_ok("Parsed Basic ACPI Info");
+
+  setup_ioapic();
+
+  k_ok("Setup IO APIC(s)");
 
   k_log("Halt");
 

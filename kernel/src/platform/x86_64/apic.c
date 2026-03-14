@@ -64,7 +64,7 @@ void write_icr(icr_t isr, uint32_t apic_id) {
     k_wrn("APIC ID has no effect with destination types greater than 0!");
   }
 
-  write_register(APIC_ICR_HIGH, apic_id << 24);
+  write_register(APIC_ICR_HIGH, apic_id >> 24);
 
   write_register(APIC_ICR_LOW, *(uint32_t *)&isr);
 }

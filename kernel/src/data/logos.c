@@ -9,7 +9,7 @@
 #define NUM_UNCOMMON_LOGOS 2
 #define NUM_RARE_LOGOS 3
 #define NUM_EPIC_LOGOS 4
-#define NUM_LEGENDARY_LOGOS 2
+#define NUM_LEGENDARY_LOGOS 3
 #define NUM_MYTHICAL_LOGOS 2
 
 #define UNCOMMON_LOGO_CHANCE 30
@@ -157,7 +157,8 @@ char *legendary_logos[NUM_LEGENDARY_LOGOS] = {
     "     _\\//\\\\\\______/\\\\\\__________\\////\\\\\\___          \n"
     "      __\\///\\\\\\__/\\\\\\_____/\\\\\\______\\//\\\\\\__         \n"
     "       ____\\///\\\\\\\\\\/_____\\///\\\\\\\\\\\\\\\\\\\\\\/___        \n"
-    "        ______\\/////_________\\///////////_____\n"};
+    "        ______\\/////_________\\///////////_____\n",
+    "Wait, what do you mean its not written in ada??"};
 
 char *mythical_logos[NUM_MYTHICAL_LOGOS] = {
     " ________"

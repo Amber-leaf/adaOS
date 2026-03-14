@@ -19,5 +19,6 @@ void k_putc(uint16_t c);
 void k_puts(const char *s);
 void k_puti(uint32_t n);
 void crlf(void);
+void cursor_goto(uint32_t x, uint32_t y) ;
 
 #endif

@@ -28,6 +28,7 @@ void print_cpu_status(struct cpu_status *context) {
 void unimplemented_fault(char *msg, struct cpu_status *context) {
   k_log("Hit fault: '%s (%d, 0x%x)'", msg, context->vector_number,
         context->vector_number);
+  print_cpu_status(context);
 }
 
 void unimplemented_trap(char *msg, struct cpu_status *context) {

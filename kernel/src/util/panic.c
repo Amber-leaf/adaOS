@@ -1,5 +1,6 @@
 #include "../header/core.h"
-#include "../platform/x86_64//header/pit.h"
+#include "../platform/x86_64/header/apic.h"
+#include "../platform/x86_64/header/pit.h"
 
 #include "header/log.h"
 #include "header/state.h"
@@ -15,9 +16,15 @@ void __attribute__((noreturn)) panic(char *msg) { // todo
   if (get_global_state().pit_initialized) {
     for (uint8_t i = 0; i < PANIC_BEEPS; i++) {
       play_sound(PANIC_SOUND_FREQUENCY);
-      pit_sleep_ms(PANIC_SOUND_INTERVAL);
+      if (get_global_state().apic_initialized == 0xf0) {
+        apic_sleep_ms(PANIC_SOUND_INTERVAL);
+      } else {
+        pit_sleep_ms(PANIC_SOUND_INTERVAL);
+      }
       sound_off();
-      pit_sleep_ms(PANIC_SOUND_INTERVAL);
+      if (get_global_state().apic_initialized == 0xf0) {
+        apic_sleep_ms(PANIC_SOUND_INTERVAL);
+      }
     }
   }
 
