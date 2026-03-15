@@ -11,7 +11,7 @@
 #include "header/rs232_handler.h"
 #include <stdint.h>
 
-void print_cpu_status(struct cpu_status *context) {
+void print_cpu_status_interrupt(struct interrupt_cpu_status *context) {
   printf_("Vector: %llu  Error Code: %016llx\n---\n", context->vector_number,
           context->error_code);
   printf_("RAX: %016llx  RBX: %016llx\n", context->rax, context->rbx);
@@ -27,23 +27,23 @@ void print_cpu_status(struct cpu_status *context) {
   printf_("RFLAGS: %016llx\n", context->iret_flags);
 }
 
-void unimplemented_fault(char *msg, struct cpu_status *context) {
+void unimplemented_fault(char *msg, struct interrupt_cpu_status *context) {
   k_log("Hit fault: '%s (%d, 0x%x)'", msg, context->vector_number,
         context->vector_number);
-  print_cpu_status(context);
+  print_cpu_status_interrupt(context);
 }
 
-void unimplemented_trap(char *msg, struct cpu_status *context) {
+void unimplemented_trap(char *msg, struct interrupt_cpu_status *context) {
   k_log("Hit trap: '%s (%d, 0x%x)'", msg, context->vector_number,
         context->vector_number);
 }
 
-void unimplemented_abort(char *msg, struct cpu_status *context) {
-  print_cpu_status(context);
+void unimplemented_abort(char *msg, struct interrupt_cpu_status *context) {
+  print_cpu_status_interrupt(context);
   panic(msg);
 }
 
-void exception_handler(struct cpu_status *context) {
+void exception_handler(struct interrupt_cpu_status *context) {
   if (context->vector_number > 0xf0) {
     send_eio();
   } else {
@@ -93,7 +93,7 @@ void exception_handler(struct cpu_status *context) {
     break;
   case 0xD: // #GP General Protection Fault
     unimplemented_fault("General Protection Fault (#GP)", context);
-    print_cpu_status(context);
+    print_cpu_status_interrupt(context);
     hcf();
     break;
   case 0xE: // #PF Page Fault
@@ -172,7 +172,7 @@ void exception_handler(struct cpu_status *context) {
 
   default:
     unimplemented_fault("Unknown Exception", context);
-    print_cpu_status(context);
+    print_cpu_status_interrupt(context);
     break;
   }
 }

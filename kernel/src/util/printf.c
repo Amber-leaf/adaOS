@@ -34,6 +34,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "../driver/header/rs232.h"
 #include "header/print_lowlevel.h"
 #include "header/printf.h"
 
@@ -130,6 +131,7 @@ typedef struct {
 } out_fct_wrap_type;
 
 void _putchar(char c) { k_putc(c); }
+void _put_serial_char(char c) { serial_writeb_blocking(c); }
 
 // internal buffer output
 static inline void _out_buffer(char character, void *buffer, size_t idx,
@@ -156,6 +158,17 @@ static inline void _out_char(char character, void *buffer, size_t idx,
   (void)maxlen;
   if (character) {
     _putchar(character);
+  }
+}
+
+// internal _put_serial_char wrapper
+static inline void _serial_out_char(char character, void *buffer, size_t idx,
+                                    size_t maxlen) {
+  (void)buffer;
+  (void)idx;
+  (void)maxlen;
+  if (character) {
+    _put_serial_char(character);
   }
 }
 
@@ -913,6 +926,15 @@ static int _vsnprintf(out_fct_type out, char *buffer, const size_t maxlen,
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+
+int serial_printf_(const char *format, ...) {
+  va_list va;
+  va_start(va, format);
+  char buffer[1];
+  const int ret = _vsnprintf(_serial_out_char, buffer, (size_t)-1, format, va);
+  va_end(va);
+  return ret;
+}
 
 int printf_(const char *format, ...) {
   va_list va;

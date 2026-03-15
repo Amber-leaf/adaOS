@@ -2,7 +2,7 @@
 #define ISR_H_
 
 #include <stdint.h>
-struct cpu_status {
+struct interrupt_cpu_status {
   uint64_t r15; // [rsp+0]
   uint64_t r14; // [rsp+8]
   uint64_t r13;

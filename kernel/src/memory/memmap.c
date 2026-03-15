@@ -136,9 +136,9 @@ void serial_print_mem_map() {
     uintptr_t base = memmap->entries[i]->base;
     uint64_t length = memmap->entries[i]->length;
 
-    printf_("Segment %d: Type: %s. Base: %p. Length: %p. Free: %s.\n", i,
-            LIMINE_MEMMAP_STRINGS[type], base, length,
-            is_memory_free(type) ? "True" : "False");
+    serial_printf_("Segment %d: Type: %s. Base: %p. Length: %p. Free: %s.\n", i,
+                   LIMINE_MEMMAP_STRINGS[type], base, length,
+                   is_memory_free(type) ? "True" : "False");
   }
 }
 

@@ -52,6 +52,8 @@ extern "C" {
 #define printf printf_
 int printf_(const char* format, ...);
 
+#define serial_printf serial_printf_
+int serial_printf_(const char *format, ...);
 
 /**
  * Tiny sprintf implementation
