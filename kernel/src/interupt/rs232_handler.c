@@ -16,7 +16,7 @@
     goto newline;                                                              \
   }
 
-bool is_first_entry = true;
+bool terminal_running = false;
 char line_buffer[255] = {0x00};
 
 uint8_t buffer_index;
@@ -53,36 +53,48 @@ void serial_print_free_ram() {
 void rs232_irq(struct interrupt_cpu_status *context) {
   char byte = serial_readb_unsafe_nonblocking();
 
+  // If we haven't started the terminal yet, ignore all input.
+  if (byte != '\r' && !terminal_running) {
+    return;
+  }
+
+  // Deal with backspace.
   if (byte == '\b') {
     if (buffer_index == 0) {
       return;
     } else {
       serial_writeb_unsafe_nonblocking(byte);
     }
+    // Zero and decrement index.
     line_buffer[buffer_index--] = 0x00;
     return;
-  } else {
-    serial_writeb_unsafe_nonblocking(byte);
   }
 
+  // Echo what we got in.
+  serial_writeb_unsafe_nonblocking(byte);
+
+  // Write the new input to the buffer.
   line_buffer[buffer_index++] = byte;
 
-  if (byte == '\r') {
+  if (byte == '\r') { // If we returned...
+    // Check against all commands.
+    // TODO: make it support parameters and not have to be in descending order
+    // of size.
     ADD_COMMAND("memmap", 6, serial_print_mem_map());
     ADD_COMMAND("clear", 5, clear());
     ADD_COMMAND("free", 4, serial_print_free_ram());
     ADD_COMMAND("reg", 3, print_cpu_status(context));
 
-    if (!is_first_entry && line_buffer[0] != '\r') {
-      serial_write_string("Unkown Command.\n");
+    if (terminal_running && line_buffer[0] != '\r') {
+      serial_printf_("Unkown Command.\n");
     }
 
   newline:
-    for (uint8_t i = 0; i < buffer_index; i++) {
-      line_buffer[i] = 0x00;
-    }
+    memset(line_buffer, 0x00, buffer_index); // Clear the buffer.
     buffer_index = 0;
+
+    // Write the new prompt.
     serial_write_string(PROMPT);
-    is_first_entry = false;
+    terminal_running = true;
   }
 }
