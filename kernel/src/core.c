@@ -324,5 +324,7 @@ void kmain(void) {
 
   k_log("Halt");
 
+  serial_write_string("Press 'Enter' to start debug shell.");
+
   hcf();
 }

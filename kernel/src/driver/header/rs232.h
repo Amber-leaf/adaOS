@@ -13,9 +13,11 @@
 #define COM7 0x5E8
 #define COM8 0x4E8
 
+// Serial is weird in that the same address do different things depending on the top bit of line control
+#define IO 0
 #define DIVISOR_LSB 0
-#define DIVISOR_MSB 1
 
+#define DIVISOR_MSB 1
 #define INTERRUPT_ENABLE 1
 
 #define INTERRUPT_IDENTIFICATION 2
@@ -25,7 +27,6 @@
 #define MODEM_CONTROL 4
 #define LINE_STATUS 5
 #define MODEM_STATUS 6
-
 #define SCRATCH 7
 
 #define MAX_BAUD 115200

@@ -1,4 +1,3 @@
-#include "../driver/header/rs232.h"
 #include "../header/core.h"
 #include "../platform/x86_64/header/apic.h"
 #include "../platform/x86_64/header/port.h"
@@ -9,6 +8,8 @@
 #include "header/apic_timer.h"
 #include "header/isr.h"
 #include "header/pit_handler.h"
+#include "header/rs232_handler.h"
+#include <stdint.h>
 
 void print_cpu_status(struct cpu_status *context) {
   printf_("Vector: %llu  Error Code: %016llx\n---\n", context->vector_number,
@@ -144,8 +145,7 @@ void exception_handler(struct cpu_status *context) {
     pit_irq();
     break;
   case 0x24:
-    serial_writeb_blocking(
-        serial_readb_unsafe_nonblocking()); // For now just echo.
+    rs232_irq(context);
     break;
   case 0x70:
     unimplemented_fault("Syscall", context);

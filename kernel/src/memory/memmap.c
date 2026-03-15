@@ -2,8 +2,8 @@
 #include "../header/core.h"
 #include "../header/limine.h"
 #include "../util/header/log.h"
-
 #include "../util/header/panic.h"
+#include "../util/header/printf.h"
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -128,6 +128,20 @@ void debug_print_mem_map() {
   }
 }
 
+void serial_print_mem_map() {
+  struct limine_memmap_response *memmap = get_memmap();
+
+  for (uint64_t i = 0; i < memmap->entry_count; i++) {
+    uint64_t type = memmap->entries[i]->type;
+    uintptr_t base = memmap->entries[i]->base;
+    uint64_t length = memmap->entries[i]->length;
+
+    printf_("Segment %d: Type: %s. Base: %p. Length: %p. Free: %s.\n", i,
+            LIMINE_MEMMAP_STRINGS[type], base, length,
+            is_memory_free(type) ? "True" : "False");
+  }
+}
+
 void print_free_ram() {
   memory_descriptor_t desc = get_memory_descriptor();
 
@@ -143,7 +157,4 @@ void print_free_ram() {
     panic("Insufficient memory. adaOS probably needs \nmore than 0.5GiB of "
           "memory free.");
   }
-
-  // debug_print_mem_map();
-  // hcf();
 }

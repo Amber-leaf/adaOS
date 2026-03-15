@@ -14,24 +14,24 @@
 #define TEST_BYTE 0x3a
 
 void check_com1() {
-  WRITE_REG(SCRATCH, 0xae);
+  WRITE_REG(SCRATCH, TEST_BYTE);
 
-  if (READ_REG(SCRATCH) != 0xae) {
+  if (READ_REG(SCRATCH) != TEST_BYTE) {
     k_err("COM1 was bad!");
+    set_state(SERIAL_INTERRUPT_INITIALIZED, false);
   }
 }
 
 bool data_in_fifo() { return READ_REG(LINE_STATUS) & 1; }
 
-bool transmitter_ready() { return READ_REG(LINE_STATUS) & 1 << 5; }
+bool transmitter_ready() { return READ_REG(LINE_STATUS) & (1 << 5); }
 
 char serial_readb_unsafe_nonblocking() {
   char data;
-  data = READ_REG(0);
+  data = READ_REG(IO);
 
-  // FIXME: Enter key only inputs carrige return, add newline. For now \r just
-  // does not work.
-  // switch (data) { case 0x0A:
+  // FIXME: Enter key only inputs carrige return, we need to add newline. For
+  // now \r just does not work. switch (data) { case 0x0A:
   //   k_debug("Got newline");
   //   break;
   // case 0x0D:
@@ -54,12 +54,12 @@ void serial_writeb_unsafe_nonblocking(char byte) {
   switch (byte) {
   case 0x0A:
   case 0x0D:
-    WRITE_REG(0, '\r');
-    WRITE_REG(0, '\n');
+    WRITE_REG(IO, '\r');
+    WRITE_REG(IO, '\n');
     break;
 
   default:
-    WRITE_REG(0, byte);
+    WRITE_REG(IO, byte);
   }
 }
 
@@ -83,6 +83,7 @@ void serial_write_string(char *s) {
     i++;
   }
 }
+
 void setup_serial(uint32_t baud) {
   check_com1();
 
@@ -103,9 +104,9 @@ void setup_serial(uint32_t baud) {
   WRITE_REG(FIFO, 0x07);             // set  FIFO with 1 byte threshold
   WRITE_REG(MODEM_CONTROL, 0x0B);    // enable the irqs
   WRITE_REG(MODEM_CONTROL, 0x1E);    // enable loopback for testing
-  WRITE_REG(0, TEST_BYTE);
+  WRITE_REG(IO, TEST_BYTE);
 
-  uint8_t inbyte = READ_REG(0);
+  uint8_t inbyte = READ_REG(IO);
 
   if (inbyte != TEST_BYTE) {
     k_err("Loopback got wrong byte! Got 0x%x, expected 0x%x", inbyte,

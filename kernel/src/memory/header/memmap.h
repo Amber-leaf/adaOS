@@ -28,6 +28,7 @@ typedef struct memory_descriptor {
 
 void print_free_ram();
 void debug_print_mem_map();
+void serial_print_mem_map();
 
 memory_descriptor_t get_memory_descriptor();
 

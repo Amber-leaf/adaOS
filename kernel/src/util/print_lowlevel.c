@@ -114,7 +114,7 @@ void clear(void) {
 
   cursor_x = cursor_y = 0;
 
-  serial_write_string("\n\n\n\n--- CLEAR ---\n\n\n\n");
+  serial_write_string("Cleared VGA.\n");
 }
 
 uint32_t calculate_y(void) { return cursor_y * 8 * font_size; }

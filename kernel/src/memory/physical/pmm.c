@@ -12,6 +12,8 @@
 #define USED false
 #define FREE true
 
+#define TEST_STRING ":3 meow uwu :3"
+
 static uint8_t page_bitmap[MAX_PAGES / 8]; // if set then used
 
 static struct page_mapping page_mappings[MAX_SEGMENTS];
@@ -20,9 +22,9 @@ static uint32_t last_used_mapping = 0;
 
 static uint64_t last_page_used = 1;
 
-static uint64_t free_pages = MAX_PAGES;
+uint64_t free_pages = MAX_PAGES;
 
-static uint64_t used_pages = 0;
+uint64_t used_pages = 0;
 
 static memory_descriptor_t desc;
 
@@ -107,6 +109,7 @@ void generate_page_mapping() {
 
     pages_used += ((chunk.bounds - chunk.base) / PAGE_SIZE) + 1;
   }
+  free_pages = pages_used;
 }
 
 uint64_t ptr_to_page(void *ptr) {
@@ -294,7 +297,11 @@ void setup_pmm() {
 
   char *p = (void *)((uintptr_t)pp_alloc() + HIGHER_HALF);
 
-  p = "debug data";
+  p = TEST_STRING;
 
   k_debug("%s", p);
+
+  if (memcmp(p, TEST_STRING, 14)) {
+    panic("Could not write and readback from physical memory!");
+  }
 }
