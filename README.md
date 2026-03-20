@@ -12,6 +12,6 @@ Physical memory manager (bitmap allocator).
 Virtual memory manager.  
 Heap manager.  
 APIC functionality.  
-Basic ACPI parsing. (todo: ACPICA or uAPIC support, requires threading and synchronization primitives or lots of work, respectivly)  
+Basic ACPI parsing. (todo: ACPICA or uACPI support, requires threading and synchronization primitives or lots of work, respectivly)  
 Configuration of IO APICs.  
 Basic serial debug shell.  
