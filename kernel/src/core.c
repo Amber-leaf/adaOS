@@ -331,7 +331,7 @@ void kmain(void) {
 
   k_log("Halt");
 
-  printf_("Press 'Enter' to start kernel debug shell...");
+  printf_("Press 'Enter' in serial terminal to start kernel debug shell...");
 
   hcf();
 }
