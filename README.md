@@ -2,6 +2,9 @@
 A small in development kernel.
 
 ## Building:
+`make run` will start QEMU and run the iso.
+
+on Arch Linux:
 ``` shell
 git clone https://github.com/Amber-leaf/adaOS/
 cd ./adaOS/kernel/
@@ -9,7 +12,14 @@ cd ./adaOS/kernel/
 cd ../
 make
 ```
-make run will start QEMU and run the iso.
+on Debian / Ubuntu
+``` shell
+git clone https://github.com/Amber-leaf/adaOS/
+cd ./adaOS/kernel/
+./get-deps-apt
+cd ../
+make
+```
 
 ## Features:
 Loads a GDT and IDT.  
