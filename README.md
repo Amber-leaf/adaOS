@@ -12,7 +12,7 @@ cd ./adaOS/kernel/
 cd ../
 make
 ```
-on Debian / Ubuntu
+on Debian / Ubuntu:
 ``` shell
 git clone https://github.com/Amber-leaf/adaOS/
 cd ./adaOS/kernel/
