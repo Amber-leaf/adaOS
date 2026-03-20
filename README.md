@@ -1,6 +1,16 @@
 # adaOS
 A small in development kernel.
 
+## Building:
+``` shell
+git clone https://github.com/Amber-leaf/adaOS/
+cd ./adaOS/kernel/
+./get-deps
+cd ../
+make
+```
+make run will start QEMU and run the iso.
+
 ## Features:
 Loads a GDT and IDT.  
 Masks PIC interrupts.  
