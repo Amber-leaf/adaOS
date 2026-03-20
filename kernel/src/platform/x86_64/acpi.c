@@ -31,6 +31,8 @@ const char *MADT_TYPES_TO_STRING[] = {"Local APIC",
                                       "Unkown/Unused",
                                       "Processor local x2APIC"};
 
+struct fadt *fadt;
+
 // TODO: this sucks.
 struct madt_type_0 *local_apics;
 uint32_t local_apic_num = 0;
@@ -47,8 +49,8 @@ uint32_t io_apic_nmi_source_num = 0;
 struct madt_type_4 *io_apic_nmis;
 uint32_t io_apic_nmi_num = 0;
 
-struct madt_type_5 *local_apic_address_overides;
-uint32_t local_apic_address_overides_num = 0;
+struct madt_type_5 *local_apic_address_overrides;
+uint32_t local_apic_address_overrides_num = 0;
 
 struct madt_type_9 *local_x2apics;
 uint32_t local_x2apic_num = 0;
@@ -126,8 +128,8 @@ void parse_madt(sdt_header_t *madt_sdt_header) {
   io_apic_nmis = kmalloc(madt_sdt_header->length);
   io_apic_nmi_num = 0;
 
-  local_apic_address_overides = kmalloc(madt_sdt_header->length);
-  local_apic_address_overides_num = 0;
+  local_apic_address_overrides = kmalloc(madt_sdt_header->length);
+  local_apic_address_overrides_num = 0;
 
   local_x2apics = kmalloc(madt_sdt_header->length);
   local_x2apic_num = 0;
@@ -176,8 +178,7 @@ void parse_madt(sdt_header_t *madt_sdt_header) {
       k_debug("IO APIC %d:", io_apics[i].io_apic_id);
       k_debug("- ID: %d", io_apics[i].io_apic_id);
       k_debug("- IOREGSEL: %p", io_apics[i].io_apic_address);
-      k_debug("- Global System Int Base: %p",
-              io_apics[i].global_system_int_base);
+      k_debug("- Lowest IRQ Serviced: %d", io_apics[i].global_system_int_base);
 
       break;
     case 2:
@@ -185,11 +186,11 @@ void parse_madt(sdt_header_t *madt_sdt_header) {
           *(struct madt_type_2 *)(header_ptr + offset +
                                   sizeof(struct madt_record_header));
       io_apic_source_override_num++;
-      k_debug("IO APIC Souce Overide %d:", i);
+      k_debug("IO APIC Source Override %d:", i);
       k_debug("- Bus Source: %d", io_apic_source_overrides[i].bus_source);
       k_debug("- IRQ Source: %d", io_apic_source_overrides[i].irq_source);
       k_debug("- Flags: 0x%x", io_apic_source_overrides[i].flags);
-      k_debug("- Global System Int Offset: 0x%x",
+      k_debug("- IRQ Destination (?): %d",
               io_apic_source_overrides[i].global_system_int);
 
       break;
@@ -201,7 +202,7 @@ void parse_madt(sdt_header_t *madt_sdt_header) {
       k_debug("IO APIC NMI Source %d:", i);
       k_debug("- NMI Source: %d", io_apic_nmi_sources[i].nmi_source);
       k_debug("- Flags: 0x%x", io_apic_nmi_sources[i].flags);
-      k_debug("- Global System Int Offset: 0x%x",
+      k_debug("- IRQ Destination (?): %d",
               io_apic_nmi_sources[i].global_system_int);
 
       break;
@@ -211,19 +212,19 @@ void parse_madt(sdt_header_t *madt_sdt_header) {
                                   sizeof(struct madt_record_header));
       io_apic_nmi_num++;
       k_debug("IO APIC NMI %d:", i);
-      k_debug("- Proccesor ID: %d", io_apic_nmis[i].acpi_processor_id);
+      k_debug("- Processor ID: %d", io_apic_nmis[i].acpi_processor_id);
       k_debug("- Flags: 0x%x", io_apic_nmis[i].flags);
-      k_debug("- LINT: 0x%x", io_apic_nmis[i].lint);
+      k_debug("- LINT: %d", io_apic_nmis[i].lint);
 
       break;
     case 5:
-      local_apic_address_overides[i] =
+      local_apic_address_overrides[i] =
           *(struct madt_type_5 *)(header_ptr + offset +
                                   sizeof(struct madt_record_header));
-      local_apic_address_overides_num++;
-      k_debug("Local APIC Address Overide %d:", i);
+      local_apic_address_overrides_num++;
+      k_debug("Local APIC Address Override %d:", i);
       k_debug(" - Real Local APIC Physical Address: %p",
-              local_apic_address_overides[i].lapic_phys);
+              local_apic_address_overrides[i].lapic_phys);
       break;
     case 9:
       local_x2apics[i] =
@@ -245,8 +246,8 @@ void parse_madt(sdt_header_t *madt_sdt_header) {
     i++;
   }
 
-  if (local_apic_address_overides_num > 0) {
-    panic("TODO: Use LAPIC address overides!");
+  if (local_apic_address_overrides_num > 0) {
+    panic("TODO: Use LAPIC address overrides!");
   }
 }
 
@@ -275,7 +276,7 @@ void bootstrap_acpi() {
   }
 
   if (rsdp_h.oem_revision != 0) {
-    k_wrn("Only RSDP rev 0 is supported & tested! Things might break.");
+    k_wrn("Only RSDP rev. 0 is supported & tested! Things might break.");
   }
 
   uint8_t *bytes = (uint8_t *)&rsdp_h;
@@ -318,7 +319,7 @@ void bootstrap_acpi() {
 
   checksum_header(fadt_sdt_header);
 
-  struct fadt *fadt = (struct fadt *)(uintptr_t)((void *)fadt_sdt_header);
+  fadt = (struct fadt *)(uintptr_t)((void *)fadt_sdt_header);
 
   if (fadt->smi_command_port != 0) {
     k_todo("Support SMI Command / System Management Mode");

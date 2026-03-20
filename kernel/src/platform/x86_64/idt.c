@@ -1,9 +1,10 @@
 #include "header/idt.h"
-#include "../../util/header/log.h"
 
 #define GDT_OFFSET_KERNEL_CODE 0x8
 
 #define IDT_VECTORS 255
+
+#define IDT_DEFAULT_FLAGS 0x8E
 
 extern void *isr_stub_table[];
 
@@ -27,8 +28,9 @@ void idt_set_descriptor(uint8_t index, void *isr, uint8_t flags) {
 void setup_idt(void) {
   idtr.base = (uintptr_t)&idt[0];
   idtr.bounds = (uint16_t)sizeof(idt_entry_t) * IDT_VECTORS - 1;
+
   for (uint8_t vector = 0; vector < 32; vector++) {
-    idt_set_descriptor(vector, isr_stub_table[vector], 0x8E);
+    idt_set_descriptor(vector, isr_stub_table[vector], IDT_DEFAULT_FLAGS);
   }
 
   extern void isr_0x20();
@@ -42,16 +44,16 @@ void setup_idt(void) {
   extern void isr_0xf5();
   extern void isr_0xf6();
 
-  idt_set_descriptor(0x20, isr_0x20, 0x8E);
-  idt_set_descriptor(0x24, isr_0x24, 0x8E);
-  idt_set_descriptor(0x70, isr_0x70, 0x8E);
-  idt_set_descriptor(0xf0, isr_0xf0, 0x8E);
-  idt_set_descriptor(0xf1, isr_0xf1, 0x8E);
-  idt_set_descriptor(0xf2, isr_0xf2, 0x8E);
-  idt_set_descriptor(0xf3, isr_0xf3, 0x8E);
-  idt_set_descriptor(0xf4, isr_0xf4, 0x8E);
-  idt_set_descriptor(0xf5, isr_0xf5, 0x8E);
-  idt_set_descriptor(0xf6, isr_0xf6, 0x8E);
+  idt_set_descriptor(0x20, isr_0x20, IDT_DEFAULT_FLAGS);
+  idt_set_descriptor(0x24, isr_0x24, IDT_DEFAULT_FLAGS);
+  idt_set_descriptor(0x70, isr_0x70, IDT_DEFAULT_FLAGS);
+  idt_set_descriptor(0xf0, isr_0xf0, IDT_DEFAULT_FLAGS);
+  idt_set_descriptor(0xf1, isr_0xf1, IDT_DEFAULT_FLAGS);
+  idt_set_descriptor(0xf2, isr_0xf2, IDT_DEFAULT_FLAGS);
+  idt_set_descriptor(0xf3, isr_0xf3, IDT_DEFAULT_FLAGS);
+  idt_set_descriptor(0xf4, isr_0xf4, IDT_DEFAULT_FLAGS);
+  idt_set_descriptor(0xf5, isr_0xf5, IDT_DEFAULT_FLAGS);
+  idt_set_descriptor(0xf6, isr_0xf6, IDT_DEFAULT_FLAGS);
 
   lidt(&idtr);
 }

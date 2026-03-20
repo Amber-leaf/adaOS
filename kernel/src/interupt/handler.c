@@ -169,6 +169,9 @@ void exception_handler(struct interrupt_cpu_status *context) {
   case 0xf6:
     unimplemented_abort("APIC Fatal Error", context);
     break;
+  case 0xff:
+    unimplemented_abort("Unhandled NMI", context);
+    break;
 
   default:
     unimplemented_fault("Unknown Exception", context);

@@ -19,13 +19,14 @@
 #include "platform/x86_64/header/msr.h"
 #include "platform/x86_64/header/pic.h"
 #include "platform/x86_64/header/pit.h"
-#include "util/header/date.h"
+#include "platform/x86_64/header/rtc.h"
 #include "util/header/log.h"
 #include "util/header/panic.h"
 #include "util/header/print_lowlevel.h"
 #include "util/header/printf.h"
 #include "util/header/state.h"
 
+#include <limits.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -324,7 +325,7 @@ void kmain(void) {
 
   k_ok("Parsed Basic ACPI Info");
 
-  setup_ioapic();
+  setup_io_apic();
 
   k_ok("Setup IO APIC(s)");
 
