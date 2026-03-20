@@ -13,16 +13,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-    - name: debug0
-      run: ls -la
-    - name: cd1
-      run:  cd ./kernel
-    - name: debug
-      run: ls -la
     - name: get-deps
-      run: ./get-deps
-    - name: cd2
-      run:  cd ../
+      run: ./kernel/get-deps
     - name: make
       run: make
     - name: make check
