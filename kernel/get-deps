@@ -30,11 +30,10 @@ clone_repo_commit() {
     fi
 }
 
-clone_repo_commit \
+git clone \
     https://codeberg.org/osdev/freestnd-c-hdrs-0bsd.git \
-    freestnd-c-hdrs \
-    5e4e9e70278fe89ea328d359a58aff4f4a94b165
-
+    freestnd-c-hdrs
+    
 clone_repo_commit \
     https://codeberg.org/osdev/cc-runtime.git \
     cc-runtime \
