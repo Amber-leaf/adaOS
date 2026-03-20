@@ -46,6 +46,6 @@ clone_repo_commit \
 
 set +x
 
-sudo apt install nasm clang qemu-full xorriso
+sudo apt install nasm clang qemu-system xorriso
 
 printf "\nDependencies obtained successfully!\n"
