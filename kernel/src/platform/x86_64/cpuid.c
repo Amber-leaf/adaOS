@@ -1,4 +1,4 @@
-#include "cpuid.h"
+#include "header/cpuid.h"
 #include "../../header/core.h"
 
 #include "header/cpuid.h"

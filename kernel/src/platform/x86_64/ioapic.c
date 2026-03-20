@@ -100,6 +100,8 @@ void setup_io_apic() {
         "- Arbitration priority: %d",
         extract_bit_range(read_io_apic_reg(virt_base, IO_APIC_ARB), 27, 24));
 
+    uint8_t nmi_index = 0;
+
     for (uint32_t q = 0; q < io_apic_nmi_source_num; q++) {
       struct madt_type_3 nmi = io_apic_nmi_sources[q];
 
@@ -157,6 +159,9 @@ void setup_io_apic() {
         entry.trigger_mode = trigger_mode;
 
         entry.delivery_mode = 0;
+
+        write_io_apic_redirection_entry(virt_base, &entry, nmi_index);
+        nmi_index++;
       }
     }
   }

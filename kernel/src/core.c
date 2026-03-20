@@ -173,7 +173,7 @@ void print_banner(void) {
   set_text_colour(0xe0e0e0);
 
   char ts[25];
-  ms_to_iso8601(get_boot_time() * 1000, ts, sizeof(ts));
+  ms_to_iso8601(get_boot_time() * 1000, ts, 25);
 
   printf_("The date is %s.\n\n", ts);
   printf_("Copyright (C) 2026 Ambersoft Technologies.\n");
@@ -331,7 +331,7 @@ void kmain(void) {
 
   k_log("Halt");
 
-  serial_write_string("Press 'Enter' to start debug shell...");
+  printf_("Press 'Enter' in serial terminal to start kernel debug shell...");
 
   hcf();
 }
