@@ -48,4 +48,6 @@ set +x
 
 sudo pacman -S nasm clang qemu-full xorriso --needed
 
+yay -S clang-format-all-git --needed
+
 printf "\nDependencies obtained successfully!\n"
