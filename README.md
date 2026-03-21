@@ -1,8 +1,8 @@
 # adaOS
-A small in development kernel.
+A small, in development kernel.
 
 ## Building:
-`make run` will start QEMU and run the iso.
+`make run` will start QEMU and run the ISO.
 
 on Arch Linux:
 ``` shell
