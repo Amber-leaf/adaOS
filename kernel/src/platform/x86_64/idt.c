@@ -9,7 +9,8 @@
 extern void *isr_stub_table[];
 
 __attribute__((aligned(0x10))) static idt_entry_t
-    idt[IDT_VECTORS]; // Create an array of IDT entries; aligned for performance
+    idt[IDT_VECTORS]; // Create an array of IDT entries; aligned for
+                      // performance
 
 static struct idt_r idtr;
 

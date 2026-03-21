@@ -1,7 +1,8 @@
 #include "header/random.h"
-#include "../util/header/log.h"
 
 #include <stdint.h>
+
+#include "../util/header/log.h"
 
 // Taken from https://en.wikipedia.org/wiki/Mersenne_Twister.
 mt_state_t local_state;

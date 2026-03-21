@@ -1,7 +1,6 @@
 #include "../../header/limine.h"
 #include "../../memory/header/heap.h"
 #include "../../util/header/log.h"
-
 #include "stddef.h"
 
 __attribute__((

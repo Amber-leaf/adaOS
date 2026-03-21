@@ -1,12 +1,12 @@
 #include "header/rs232.h"
-#include "../platform/x86_64/header/pic.h"
-#include "../platform/x86_64/header/port.h"
-
-#include "../util/header/log.h"
-#include "../util/header/state.h"
 
 #include <stdbool.h>
 #include <stdint.h>
+
+#include "../platform/x86_64/header/pic.h"
+#include "../platform/x86_64/header/port.h"
+#include "../util/header/log.h"
+#include "../util/header/state.h"
 
 #define WRITE_REG(offset, value) (outb(COM1 + offset, value))
 #define READ_REG(offset) inb(COM1 + offset)

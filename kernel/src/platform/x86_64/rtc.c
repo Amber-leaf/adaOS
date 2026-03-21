@@ -1,10 +1,10 @@
 #include "header/rtc.h"
+
 #include <stdint.h>
 
 #include "../../memory/header/heap.h"
 #include "../../util/header/log.h"
 #include "../../util/header/printf.h"
-
 #include "header/acpi.h"
 #include "header/apic.h"
 #include "header/port.h"
@@ -108,13 +108,18 @@ static uint64_t get_unix_epoch(uint8_t seconds, uint8_t minutes, uint8_t hours,
 }
 
 uint64_t get_unix_timestamp() {
+  k_debug("get unix time");
   uint32_t century;
   if (fadt->century) {
+    k_debug("read century a");
+
     century = read_cmos_reg(fadt->century);
+    k_debug("read century");
   } else {
     century = 0x20;
     k_wrn("No century supported in RTC, assuming it's still 20xx.");
   }
+  k_debug("done century");
 
   char seconds_buf[9];
   snprintf_(seconds_buf, 10, "%x", read_cmos_reg(REGISTER_SECONDS));
@@ -134,15 +139,21 @@ uint64_t get_unix_timestamp() {
   char year_buf[9];
   snprintf_(year_buf, 10, "%x%x", century, read_cmos_reg(REGISTER_YEAR));
 
+  k_debug("done unix time");
+
   return get_unix_epoch(atoi_(seconds_buf), atoi_(minutes_buf),
                         atoi_(hours_buf), atoi_(day_buf), atoi_(month_buf),
                         atoi_(year_buf));
 }
 
 char *get_formatted_time() {
+  k_debug("Geting time");
   char *buf = kmalloc(25);
+  k_debug("malloc");
 
   ms_to_iso8601(get_unix_timestamp() * 1000, buf, 25);
+
+  k_debug("convert");
 
   return buf;
 }

@@ -1,17 +1,17 @@
 #include "header/acpi.h"
+
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+
 #include "../../header/core.h"
 #include "../../header/limine.h"
 #include "../../memory/header/heap.h"
 #include "../../memory/header/memmap.h"
 #include "../../memory/virtual/header/vmm.h"
-
 #include "../../util/header/log.h"
 #include "../../util/header/panic.h"
 #include "../../util/header/printf.h"
-
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
 
 __attribute__((
     used,
@@ -331,7 +331,8 @@ void bootstrap_acpi() {
     k_wrn("Uing X_FACS, this might not work!");
     facs_ptr = fadt->x_firmware_control;
   } else {
-    panic("Something went horribly wrong parsing FADT, FACS pointer was NULL!");
+    panic("Something went horribly wrong parsing FADT, FACS pointer was "
+          "NULL!");
   }
 
   k_debug("firmware ctrl: %p", fadt->firmware_ctrl);
@@ -339,6 +340,6 @@ void bootstrap_acpi() {
 
   k_debug("dsdt ptr: %p", fadt->dsdt);
 
-  // TODO: parse DSDT using ACPICA. (or write parser i guess but that looks like
-  // hell lol)
+  // TODO: parse DSDT using ACPICA. (or write parser i guess but that looks
+  // like hell lol)
 }

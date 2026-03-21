@@ -1,13 +1,13 @@
 #include "header/pmm.h"
-#include "../header/memmap.h"
-
-#include "../../header/core.h"
-#include "../../util/header/log.h"
-#include "../../util/header/panic.h"
 
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+
+#include "../../header/core.h"
+#include "../../util/header/log.h"
+#include "../../util/header/panic.h"
+#include "../header/memmap.h"
 
 #define USED false
 #define FREE true
@@ -134,10 +134,8 @@ retry:
 
   if (ptr > (void *)mapping.offset &&
       ptr < (void *)(mapping.offset + segment_size)) {
-
     return mapping.page_start_index +
            (uint64_t)(ptr - mapping.offset) / PAGE_SIZE;
-
   } else if (last_used_mapping <= desc.chunk_count) {
     last_used_mapping++;
     goto retry;
@@ -168,7 +166,6 @@ retry:
       page_index < mapping.page_end_index) {
     return (void *)(mapping.offset +
                     (page_index - mapping.page_start_index) * PAGE_SIZE);
-
   } else if (last_used_mapping <= desc.chunk_count) {
     last_used_mapping++;
     goto retry;
@@ -224,7 +221,8 @@ void *pp_alloc() {
 
 void _pp_free(uint64_t page_index) {
   if (page_index > MAX_PAGES) {
-    k_err("tried to free physical page %d at %p that was outside the bounds of "
+    k_err("tried to free physical page %d at %p that was outside the "
+          "bounds of "
           "paged memory!",
           page_index, page_to_ptr(page_index));
     return;
