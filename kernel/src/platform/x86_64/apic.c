@@ -1,16 +1,16 @@
 #include "header/apic.h"
+
+#include <stdint.h>
+
+#include "../../interupt/header/apic_timer.h"
 #include "../../memory/header/memmap.h"
 #include "../../memory/virtual/header/vmm.h"
 #include "../../util/header/log.h"
 #include "../../util/header/panic.h"
 #include "../../util/header/state.h"
-
-#include "../../interupt/header/apic_timer.h"
-
 #include "header/msr.h"
 #include "header/pic.h"
 #include "header/pit.h"
-#include <stdint.h>
 
 #define IA32_APIC_BASE_MSR 0x1B
 

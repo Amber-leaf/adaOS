@@ -1,15 +1,15 @@
+#include <stdint.h>
+
 #include "../header/core.h"
 #include "../platform/x86_64/header/apic.h"
 #include "../platform/x86_64/header/port.h"
 #include "../util/header/log.h"
 #include "../util/header/panic.h"
 #include "../util/header/printf.h"
-
 #include "header/apic_timer.h"
 #include "header/isr.h"
 #include "header/pit_handler.h"
 #include "header/rs232_handler.h"
-#include <stdint.h>
 
 void print_cpu_status_interrupt(struct interrupt_cpu_status *context) {
   printf_("Vector: %llu  Error Code: %016llx\n---\n", context->vector_number,

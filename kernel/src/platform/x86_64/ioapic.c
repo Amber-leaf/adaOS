@@ -1,14 +1,13 @@
 #include "header/ioapic.h"
-#include "../../util/header/bits.h"
-#include "../../util/header/log.h"
-#include "../../util/header/panic.h"
+
+#include <stdint.h>
 
 #include "../../memory/header/memmap.h"
 #include "../../memory/virtual/header/vmm.h"
-
+#include "../../util/header/bits.h"
+#include "../../util/header/log.h"
+#include "../../util/header/panic.h"
 #include "header/acpi.h"
-
-#include <stdint.h>
 
 extern struct madt_type_1 *io_apics;
 extern uint32_t io_apic_num;
@@ -116,7 +115,6 @@ void setup_io_apic() {
 
       if (nmi_override.global_system_int < highest_irq &&
           nmi_override.global_system_int > lowest_irq) {
-
         io_apic_redirection_tbl_entry_t entry;
 
         entry.isr_index = 0xff;

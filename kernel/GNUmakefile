@@ -121,7 +121,7 @@ override HEADER_DEPS := $(addprefix obj/,$(CFILES:.c=.c.d) $(ASFILES:.S=.S.d))
 # Default target. This must come first, before header dependencies.
 .PHONY: all
 all: bin/$(OUTPUT)
-	clang-format $(CFILES) -i
+	clang-format $(CFILES) -i --sort-includes --style=LLVM
 
 # Include header dependencies.
 -include $(HEADER_DEPS)

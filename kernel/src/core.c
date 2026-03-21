@@ -1,4 +1,10 @@
 #include "header/core.h"
+
+#include <limits.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+
 #include "crypt/header/random.h"
 #include "data/logos.h"
 #include "driver/header/rs232.h"
@@ -25,11 +31,6 @@
 #include "util/header/print_lowlevel.h"
 #include "util/header/printf.h"
 #include "util/header/state.h"
-
-#include <limits.h>
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
 
 // Set the base revision to 3, this is recommended as this is the latest
 // base revision described by the Limine boot protocol specification.
@@ -176,7 +177,7 @@ void print_banner(void) {
   ms_to_iso8601(get_boot_time() * 1000, ts, 25);
 
   printf_("The date is %s.\n\n", ts);
-  printf_("Copyright (C) 2026 Ambersoft Technologies.\n");
+  printf_("Copyright (C) 2026 adaOS contributors.\n");
 
   print_random_logo();
 
@@ -329,9 +330,13 @@ void kmain(void) {
 
   k_ok("Setup IO APIC(s)");
 
-  k_log("Halt");
+  k_log("At end of implemented features, hanging.");
+
+  crlf();
 
   printf_("Press 'Enter' in serial terminal to start kernel debug shell...");
+
+  crlf();
 
   hcf();
 }

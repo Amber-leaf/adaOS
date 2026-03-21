@@ -5,10 +5,10 @@
 // \license The MIT License (MIT)
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
+// of this software and associated documentation files (the "Software"), to
+// deal in the Software without restriction, including without limitation the
+// rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+// sell copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions:
 //
 // The above copyright notice and this permission notice shall be included in
@@ -18,9 +18,9 @@
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 // AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-// THE SOFTWARE.
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+// IN THE SOFTWARE.
 //
 // \brief Tiny printf, sprintf and (v)snprintf implementation, optimized for
 // speed on
@@ -31,12 +31,13 @@
 //
 ///////////////////////////////////////////////////////////////////////////////
 
+#include "header/printf.h"
+
 #include <stdbool.h>
 #include <stdint.h>
 
 #include "../driver/header/rs232.h"
 #include "header/print_lowlevel.h"
-#include "header/printf.h"
 
 // define this globally (e.g. gcc -DPRINTF_INCLUDE_CONFIG_H ...) to include the
 // printf_config.h header file
@@ -510,7 +511,8 @@ static size_t _etoa(out_fct_type out, char *buffer, size_t idx, size_t maxlen,
   }
 
   // determine the decimal exponent
-  // based on the algorithm by David Gay (https://www.ampl.com/netlib/fp/dtoa.c)
+  // based on the algorithm by David Gay
+  // (https://www.ampl.com/netlib/fp/dtoa.c)
   union {
     uint64_t U;
     double F;
@@ -538,8 +540,8 @@ static size_t _etoa(out_fct_type out, char *buffer, size_t idx, size_t maxlen,
     conv.F /= 10;
   }
 
-  // the exponent format is "%+03d" and largest value is "307", so set aside 4-5
-  // characters
+  // the exponent format is "%+03d" and largest value is "307", so set aside
+  // 4-5 characters
   unsigned int minwidth = ((expval < 100) && (expval > -100)) ? 4U : 5U;
 
   // in "%g" mode, "prec" is the number of *significant figures* not decimals
@@ -566,7 +568,8 @@ static size_t _etoa(out_fct_type out, char *buffer, size_t idx, size_t maxlen,
   // will everything fit?
   unsigned int fwidth = width;
   if (width > minwidth) {
-    // we didn't fall-back so subtract the characters required for the exponent
+    // we didn't fall-back so subtract the characters required for the
+    // exponent
     fwidth -= minwidth;
   } else {
     // not enough characters, so go back to default sizing

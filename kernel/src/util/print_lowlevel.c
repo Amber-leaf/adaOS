@@ -1,9 +1,9 @@
+#include <stdbool.h>
+#include <stdint.h>
+
 #include "../driver/header/rs232.h"
 #include "../header/core.h"
 #include "../header/limine.h"
-
-#include <stdbool.h>
-#include <stdint.h>
 
 #define MISSING font[0]
 

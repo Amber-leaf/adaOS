@@ -1,10 +1,10 @@
+#include <stdint.h>
+
 #include "../header/core.h"
 #include "../platform/x86_64/header/apic.h"
 #include "../platform/x86_64/header/pit.h"
-
 #include "header/log.h"
 #include "header/state.h"
-#include <stdint.h>
 
 #define PANIC_SOUND_INTERVAL 200
 #define PANIC_SOUND_FREQUENCY 400
@@ -17,8 +17,8 @@ panic(char *msg) { // TODO: add proper cleanup and tracing.
   if (panics > 0) {
     k_err("Something is super fucky, panic panicked %d time(s). yay osdev >:3",
           panics);
-    hcf(); // just stop, i dont even trust the pit to play sound if we get here
-           // here.
+    hcf(); // just stop, i dont even trust the pit to play sound if we get
+           // here here.
   }
 
   panics++;

@@ -1,9 +1,11 @@
 #include "logos.h"
+
+#include <stddef.h>
+#include <stdint.h>
+
 #include "../crypt/header/random.h"
 #include "../util/header/print_lowlevel.h"
 #include "../util/header/printf.h"
-#include <stddef.h>
-#include <stdint.h>
 
 #define NUM_COMMON_LOGOS 4
 #define NUM_UNCOMMON_LOGOS 2

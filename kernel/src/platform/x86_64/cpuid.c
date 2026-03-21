@@ -1,9 +1,10 @@
 #include "header/cpuid.h"
-#include "../../header/core.h"
 
-#include "header/cpuid.h"
 #include <stdbool.h>
 #include <stdint.h>
+
+#include "../../header/core.h"
+#include "header/cpuid.h"
 
 cpuid_regs_t cpuid(uint32_t leaf, uint32_t subleaf) {
   cpuid_regs_t regs;

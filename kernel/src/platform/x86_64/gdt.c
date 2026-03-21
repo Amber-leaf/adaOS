@@ -1,4 +1,5 @@
 #include "header/gdt.h"
+
 #include <stdint.h>
 
 __attribute__((aligned(16))) uint8_t kernel_stack[4096];

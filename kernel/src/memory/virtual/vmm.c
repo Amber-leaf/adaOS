@@ -1,6 +1,8 @@
 // Adapted from the Arikoto Operating System Development Project;
 // https://codeberg.org/NerdNextDoor/arikoto.
 
+#include "header/vmm.h"
+
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -11,7 +13,6 @@
 #include "../../util/header/state.h"
 #include "../header/memmap.h"
 #include "../physical/header/pmm.h"
-#include "header/vmm.h"
 
 extern uint8_t _text_start[], _text_end[];
 extern uint8_t _rodata_start[], _rodata_end[];
@@ -42,7 +43,6 @@ uintptr_t *get_next_level(uintptr_t *current_level_virt, size_t index) {
 
 uintptr_t *allocate_next_level(uintptr_t *current_level_virt, size_t index,
                                uint64_t pte_flags) {
-
   void *next_level_phys = pp_alloc();
 
   if (next_level_phys == NULL) {
@@ -223,7 +223,6 @@ void setup_vmm() {
     uint64_t flags = PTE_PRESENT;
 
     if (p_virt >= (uintptr_t)_text_start && p_virt < (uintptr_t)_text_end) {
-
     } else if (p_virt >= (uintptr_t)_rodata_start &&
                p_virt < (uintptr_t)_rodata_end) {
       flags |= PTE_NX;

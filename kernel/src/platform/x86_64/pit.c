@@ -1,12 +1,12 @@
 #include "header/pit.h"
-#include "../../interupt/header/pit_handler.h"
-
-#include "header/pic.h"
-#include "header/port.h"
 
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+
+#include "../../interupt/header/pit_handler.h"
+#include "header/pic.h"
+#include "header/port.h"
 
 #define PIT_FREQUENCY 1193182
 

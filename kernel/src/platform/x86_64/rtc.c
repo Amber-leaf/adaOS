@@ -1,10 +1,10 @@
 #include "header/rtc.h"
+
 #include <stdint.h>
 
 #include "../../memory/header/heap.h"
 #include "../../util/header/log.h"
 #include "../../util/header/printf.h"
-
 #include "header/acpi.h"
 #include "header/apic.h"
 #include "header/port.h"
