@@ -10,7 +10,7 @@ void setup_random(uint32_t seed) {
   mt_state_t *state = &local_state;
   uint32_t *state_array = &(state->state_array[0]);
 
-  state_array[0] = seed; // suggested initial seed = 19650218UL
+  state_array[0] = seed;
 
   for (int i = 1; i < _n; i++) {
     seed = _f * (seed ^ (seed >> (_w - 2))) +
@@ -66,7 +66,7 @@ uint32_t random_uint32() {
   return z;
 }
 
-// note that this is not cryptographic secure. (min - max]
+// note that this is not cryptographicly secure. (min - max]
 uint32_t random_range(uint32_t min, uint32_t max) {
   if (min > max) {
     k_err("Bad random range!");
