@@ -69,7 +69,7 @@ char *get_hypervisor_vendor() {
 
     return hv_vendor;
   } else {
-    return "NOHYPERVISOR";
+    return NO_HYPERVISOR_TEXT;
   }
 }
 

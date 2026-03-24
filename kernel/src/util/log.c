@@ -11,7 +11,7 @@
 #define WRN_TEXT_COLOUR 0xffff66
 #define ERR_TEXT_COLOUR 0xff6666
 
-// #define DBG
+#define DBG
 #define LOG
 #define OK
 #define WRN

@@ -16,7 +16,6 @@
 #include "memory/physical/header/pmm.h"
 #include "memory/virtual/header/vmm.h"
 #include "platform/x86_64/header/acpi.h"
-#include "platform/x86_64/header/ap.h"
 #include "platform/x86_64/header/apic.h"
 #include "platform/x86_64/header/cpuid.h"
 #include "platform/x86_64/header/gdt.h"
@@ -26,6 +25,7 @@
 #include "platform/x86_64/header/pic.h"
 #include "platform/x86_64/header/pit.h"
 #include "platform/x86_64/header/rtc.h"
+#include "platform/x86_64/header/timing.h"
 #include "util/header/log.h"
 #include "util/header/panic.h"
 #include "util/header/print_lowlevel.h"
@@ -216,8 +216,10 @@ void kmain(void) {
     k_err("CPUID not supported!");
   } else {
     set_state(CPUID_SUPPORTED, true);
-    k_log("CPU info: %s (%s).", get_cpu_name(), get_cpu_vendor());
-    k_log("Hypervisor: %s", get_hypervisor_vendor());
+    k_log("CPU: %s (%s).", get_cpu_name(), get_cpu_vendor());
+    char *hypervisor = get_hypervisor_vendor();
+    if (memcmp(hypervisor, NO_HYPERVISOR_TEXT, 12))
+      k_log("Hypervisor: %s", get_hypervisor_vendor());
   }
 
   crlf();
@@ -329,6 +331,8 @@ void kmain(void) {
   setup_io_apic();
 
   k_ok("Setup IO APIC(s)");
+
+  k_debug("%d", get_timer().bound);
 
   k_log("At end of implemented features, hanging.");
 

@@ -2,6 +2,8 @@
 
 #include <stdint.h>
 
+#include "../../platform/x86_64/header/timing.h"
+
 #include "../../interupt/header/apic_timer.h"
 #include "../../memory/header/memmap.h"
 #include "../../memory/virtual/header/vmm.h"
@@ -145,6 +147,8 @@ void bootstrap_apic() {
   k_debug("apic id: 0x%x", read_register(APIC_ID));
 
   apic_start_timer();
+
+  bind_timer(get_apic_ticks, get_apic_ticks, apic_sleep_ms);
 
   write_lvt_entry(APIC_LVT_THERMAL, 0xf2);
   write_lvt_entry(APIC_LVT_ERROR, 0xf6);

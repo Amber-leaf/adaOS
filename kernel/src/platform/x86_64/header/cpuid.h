@@ -3,6 +3,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#define NO_HYPERVISOR_TEXT "NOHYPERVISOR"
+
 typedef struct cpuid_regs {
     uint32_t eax;
     uint32_t ebx;
