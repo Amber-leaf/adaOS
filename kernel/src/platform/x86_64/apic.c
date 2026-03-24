@@ -48,7 +48,7 @@ void write_lvt_entry(uintptr_t offset, uint8_t idt_index) {
   uint32_t *ptr = ((uint32_t *)(apic_virt + offset));
 
   ptr[0] = idt_index;
-  ptr[8] = 0b000001101;
+  ptr[7] = 0b000001101;
 }
 
 void write_register(uintptr_t offset, uint32_t value) {
@@ -146,9 +146,10 @@ void bootstrap_apic() {
 
   apic_start_timer();
 
-  // FIXME: These break serial for some reason.
-  // write_lvt_entry(APIC_LVT_THERMAL, 0xf2);
-  // write_lvt_entry(APIC_LVT_ERROR, 0xf6);
+  write_lvt_entry(APIC_LVT_THERMAL, 0xf2);
+  write_lvt_entry(APIC_LVT_ERROR, 0xf6);
+
+  unmask_irq(4);
   //  TODO: the rest of these
 }
 
