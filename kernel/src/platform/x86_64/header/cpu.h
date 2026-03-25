@@ -5,10 +5,10 @@
 #include "../../../scheduler/header/scheduler.h"
 #include "timing.h"
 
-typedef uint64_t cpu_id ;
+typedef uint64_t cpu_id_t;
 
 typedef struct cpu {
-    cpu_id local_id;
+    cpu_id_t local_id;
 
     uint32_t lapic_id;
     uintptr_t lapic_base;

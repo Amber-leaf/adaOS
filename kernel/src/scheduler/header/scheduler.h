@@ -3,8 +3,30 @@
 
 #include <stdint.h>
 #include "../../platform/x86_64/header/timing.h"
-typedef struct proccess {
 
+typedef uint32_t spinlock_t;
+
+#define SPINLOCK_INIT_VALUE 0
+#define SPINLOCK_INIT(x) x = SPINLOCK_INIT_VALUE
+#define SPINLOCK_DEFINE(x) spinlock_t x = SPINLOCK_INIT_VALUE
+
+static inline bool spinlock_try(spinlock_t *lock) {
+	return __sync_bool_compare_and_swap(lock, 0, 1);
+}
+
+static inline void spinlock_acquire(spinlock_t *lock) {
+	while (!__sync_bool_compare_and_swap(lock, 0, 1)) {
+		while (*lock) asm volatile ("pause" : : : "memory");
+	}
+}
+
+static inline void spinlock_release(spinlock_t *lock) {
+	__atomic_store_n(lock, 0, __ATOMIC_RELEASE);
+}
+
+typedef struct proccess {
+    struct thread* threads;
+    uint32_t num_threads; 
 
 } proccess_t;
 
@@ -17,7 +39,6 @@ typedef struct thread {
 
 
 } thread_t;
-
 
 typedef struct execution_queue_entry {
     struct execution_queue_entry* previous;

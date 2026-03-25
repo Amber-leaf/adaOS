@@ -190,7 +190,7 @@ void parse_madt(sdt_header_t *madt_sdt_header) {
       k_debug("- Bus Source: %d", io_apic_source_overrides[i].bus_source);
       k_debug("- IRQ Source: %d", io_apic_source_overrides[i].irq_source);
       k_debug("- Flags: 0x%x", io_apic_source_overrides[i].flags);
-      k_debug("- IRQ Destination (?): %d",
+      k_debug("- IRQ Destination: %d",
               io_apic_source_overrides[i].global_system_int);
 
       break;

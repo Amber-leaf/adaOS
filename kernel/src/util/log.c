@@ -1,5 +1,6 @@
-#include "../platform/x86_64//header/apic.h"
-#include "../platform/x86_64//header/pit.h"
+#include "../platform/x86_64/header/apic.h"
+#include "../platform/x86_64/header/pit.h"
+#include "../scheduler/header/scheduler.h"
 #include "header/print_lowlevel.h"
 #include "header/printf.h"
 #include "header/state.h"
@@ -25,8 +26,11 @@
 #define TEST_FAIL_FREQUENCY 400
 #define TEST_FAIL_HOLD 400
 
+spinlock_t log_lock;
+
 void k_debug(char *format, ...) {
 #ifdef DBG
+  spinlock_acquire(&log_lock);
   va_list va;
   va_start(va, format);
 
@@ -36,11 +40,13 @@ void k_debug(char *format, ...) {
   va_end(va);
   set_text_colour(PLAIN_TEXT_COLOUR);
   crlf();
+  spinlock_release(&log_lock);
 #endif
 }
 
 void k_log(char *format, ...) {
 #ifdef LOG
+  spinlock_acquire(&log_lock);
   va_list va;
   va_start(va, format);
 
@@ -49,11 +55,13 @@ void k_log(char *format, ...) {
   vprintf(format, va);
   va_end(va);
   crlf();
+  spinlock_release(&log_lock);
 #endif
 }
 
 void k_ok(char *format, ...) {
 #ifdef OK
+  spinlock_acquire(&log_lock);
   va_list va;
   va_start(va, format);
 
@@ -66,11 +74,13 @@ void k_ok(char *format, ...) {
   vprintf(format, va);
   va_end(va);
   crlf();
+  spinlock_release(&log_lock);
 #endif
 }
 
 void k_wrn(char *format, ...) {
 #ifdef WRN
+  spinlock_acquire(&log_lock);
   va_list va;
   va_start(va, format);
 
@@ -82,11 +92,13 @@ void k_wrn(char *format, ...) {
   vprintf(format, va);
   va_end(va);
   crlf();
+  spinlock_release(&log_lock);
 #endif
 }
 
 void k_err(char *format, ...) {
 #ifdef ERR
+  spinlock_acquire(&log_lock);
   va_list va;
   va_start(va, format);
 
@@ -98,11 +110,13 @@ void k_err(char *format, ...) {
   vprintf(format, va);
   va_end(va);
   crlf();
+  spinlock_release(&log_lock);
 #endif
 }
 
 void k_todo(char *format, ...) {
 #ifdef TODO
+  spinlock_acquire(&log_lock);
   va_list va;
   va_start(va, format);
 
@@ -114,11 +128,13 @@ void k_todo(char *format, ...) {
   vprintf(format, va);
   va_end(va);
   crlf();
+  spinlock_release(&log_lock);
 #endif
 }
 
 void k_test_pass(char *format, ...) {
 #ifdef TEST_PASS
+  spinlock_acquire(&log_lock);
   va_list va;
   va_start(va, format);
 
@@ -130,11 +146,13 @@ void k_test_pass(char *format, ...) {
   vprintf(format, va);
   va_end(va);
   crlf();
+  spinlock_release(&log_lock);
 #endif
 }
 
 void k_test_fail(char *format, ...) {
 #ifdef TEST_FAIL
+  spinlock_acquire(&log_lock);
   if (get_global_state().pit_initialized) {
     play_sound(TEST_FAIL_FREQUENCY);
   }
@@ -154,10 +172,11 @@ void k_test_fail(char *format, ...) {
   if (get_global_state().pit_initialized) {
     if (get_global_state().pit_timer_running) {
       pit_sleep_ms(TEST_FAIL_HOLD);
-    } else if (get_global_state().apic_initialized == 0xf0) {
+    } else if (get_global_state().apic_initialized >= 0xf0) {
       apic_sleep_ms(TEST_FAIL_HOLD);
     }
     sound_off();
   }
+  spinlock_release(&log_lock);
 #endif
 }

@@ -5,6 +5,7 @@
 #include "../../memory/header/memmap.h"
 #include "../../memory/physical/header/pmm.h"
 #include "../../util/header/log.h"
+#include "../../util/header/panic.h"
 #include "../../util/header/printf.h"
 #include "header/msr.h"
 
@@ -12,6 +13,9 @@
 #include <stdint.h>
 
 cpu_t **smp_cpus;
+
+size_t cpus_awake = 1;
+cpu_id_t id = 1;
 
 __attribute__((
     used, section(".limine_requests"))) static volatile struct limine_mp_request
@@ -51,18 +55,18 @@ struct limine_mp_response *get_mp_info() {
   }
 }
 
-uint64_t next_id = 1;
-
 void awake(struct limine_mp_info *info) {
   set_cpu((cpu_t *)info->extra_argument); // We stashed the cpu context in the
                                           // extra argument the Limine gives us.
   get_cpu()->lapic_base = read_msr(MSR_IA32_APIC_BASE);
-  get_cpu()->local_id = info->lapic_id;
+  get_cpu()->local_id = __atomic_fetch_add(&id, 1, __ATOMIC_SEQ_CST);
 
-  k_debug("lapic base: %p", get_cpu()->lapic_base);
-  k_debug("lapic id: %d", get_cpu()->local_id);
+  // k_debug("lapic base: %p", get_cpu()->lapic_base);
+  // k_debug("lapic id: %d", get_cpu()->local_id);
 
-  k_debug("hello world from cpu %d!", get_cpu()->local_id);
+  k_log("hello world from cpu %d!", get_cpu()->local_id);
+
+  __atomic_fetch_add(&cpus_awake, 1, __ATOMIC_SEQ_CST);
 
   hcf();
 }
@@ -76,7 +80,10 @@ void setup_cpus() {
 
   // use physical pages so the other cpus have it on the hhdm
   size_t cpu_size = ALIGN_UP(sizeof(cpu_t) * mp->cpu_count, PAGE_SIZE);
-  k_debug("bad: %d", cpu_size > PAGE_SIZE);
+
+  if (cpu_size > PAGE_SIZE) {
+    panic("TODO: let pp_alloc allocate more than one page contiguously");
+  }
 
   cpu_t *cpus = HIGHER_HALF + pp_alloc();
 
@@ -94,11 +101,9 @@ void setup_cpus() {
 
     __atomic_store_n(&mp->cpus[i]->goto_address, awake, __ATOMIC_SEQ_CST);
   }
-  size_t arch_smp_cpusawake = 1;
 
-  while (__atomic_load_n(&arch_smp_cpusawake, __ATOMIC_SEQ_CST) !=
-         mp->cpu_count)
+  while (__atomic_load_n(&cpus_awake, __ATOMIC_SEQ_CST) != mp->cpu_count)
     asm("pause");
 
-  k_debug("awoke other processors\n");
+  k_debug("Started other CPUs");
 }
