@@ -17,6 +17,7 @@
 #include "memory/virtual/header/vmm.h"
 #include "platform/x86_64/header/acpi.h"
 #include "platform/x86_64/header/apic.h"
+#include "platform/x86_64/header/cpu.h"
 #include "platform/x86_64/header/cpuid.h"
 #include "platform/x86_64/header/gdt.h"
 #include "platform/x86_64/header/idt.h"
@@ -262,11 +263,11 @@ void kmain(void) {
   }
 
   // 0x800 | 0x100 | 0x001
-  write_msr(IA32_EFER, 0x901);
-  if (read_msr(IA32_EFER) != 0xd01) {
-    k_test_fail("IA32_EFER Error: could not set IA_32e mode");
+  write_msr(MSR_IA32_EFER, 0x901);
+  if (read_msr(MSR_IA32_EFER) != 0xd01) {
+    k_test_fail("MSR_IA32_EFER Error: could not set IA_32e mode");
   } else {
-    k_test_pass("IA32_EFER");
+    k_test_pass("MSR_IA32_EFER");
   }
 
   setup_pmm();
@@ -332,7 +333,11 @@ void kmain(void) {
 
   k_ok("Setup IO APIC(s)");
 
-  k_debug("%d", get_timer().bound);
+  setup_cpus();
+
+  k_ok("Setup CPUs");
+
+  // k_debug("%d", get_timer().bound);
 
   k_log("At end of implemented features, hanging.");
 

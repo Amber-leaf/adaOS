@@ -202,7 +202,7 @@ void parse_madt(sdt_header_t *madt_sdt_header) {
       k_debug("IO APIC NMI Source %d:", i);
       k_debug("- NMI Source: %d", io_apic_nmi_sources[i].nmi_source);
       k_debug("- Flags: 0x%x", io_apic_nmi_sources[i].flags);
-      k_debug("- IRQ Destination (?): %d",
+      k_debug("- IRQ Destination: %d",
               io_apic_nmi_sources[i].global_system_int);
 
       break;

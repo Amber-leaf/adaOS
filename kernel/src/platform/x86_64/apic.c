@@ -14,8 +14,6 @@
 #include "header/pic.h"
 #include "header/pit.h"
 
-#define IA32_APIC_BASE_MSR 0x1B
-
 static struct local_apic_r apic;
 
 uintptr_t apic_virt;
@@ -23,7 +21,7 @@ uintptr_t apic_virt;
 extern pagemap_t *kernel_pagemap;
 
 struct local_apic_r get_apic() {
-  uint64_t data = read_msr(IA32_APIC_BASE_MSR);
+  uint64_t data = read_msr(MSR_IA32_APIC_BASE);
 
   k_debug("apic data: %016lx", data);
 
@@ -148,7 +146,7 @@ void bootstrap_apic() {
 
   apic_start_timer();
 
-  bind_timer(get_apic_ticks, get_apic_ticks, apic_sleep_ms);
+  // bind_timer(get_apic_ticks, get_apic_ticks, apic_sleep_ms);
 
   write_lvt_entry(APIC_LVT_THERMAL, 0xf2);
   write_lvt_entry(APIC_LVT_ERROR, 0xf6);
@@ -156,5 +154,7 @@ void bootstrap_apic() {
   unmask_irq(4);
   //  TODO: the rest of these
 }
+
+void setup_cpu() {}
 
 void send_eio() { write_register(APIC_EOI, 0); }

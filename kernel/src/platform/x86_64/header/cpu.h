@@ -19,5 +19,6 @@ typedef struct cpu {
 } cpu_t;
 
 cpu_t *this_cpu(void);
+void setup_cpus(void);
 
 #endif
