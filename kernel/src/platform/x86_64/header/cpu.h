@@ -8,7 +8,7 @@
 typedef uint64_t cpu_id_t;
 
 typedef struct cpu {
-    cpu_id_t local_id;
+    cpu_id_t id;
 
     uint32_t lapic_id;
     uintptr_t lapic_base;
@@ -18,7 +18,7 @@ typedef struct cpu {
     cpu_timer_t timer;
 } cpu_t;
 
-cpu_t *this_cpu(void);
+cpu_t *get_cpu(void);
 void setup_cpus(void);
 
 #endif

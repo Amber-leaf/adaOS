@@ -4,12 +4,17 @@
 #include "../../memory/header/heap.h"
 #include "../../memory/header/memmap.h"
 #include "../../memory/physical/header/pmm.h"
+#include "../../memory/virtual/header/vmm.h"
+#include "../../platform/x86_64/header/apic.h"
 #include "../../util/header/log.h"
 #include "../../util/header/panic.h"
 #include "../../util/header/printf.h"
+#include "../../util/header/state.h"
+
 #include "header/msr.h"
 
 #include "stddef.h"
+#include <stdbool.h>
 #include <stdint.h>
 
 cpu_t **smp_cpus;
@@ -21,14 +26,7 @@ __attribute__((
     used, section(".limine_requests"))) static volatile struct limine_mp_request
     mp_request = {.id = LIMINE_MP_REQUEST, .revision = 0};
 
-cpu_t inline *get_cpu(void) {
-  cpu_t *cpu;
-  // asm volatile("mov %%gs:0, %%rax" : "=a"(cpu) : : "memory"); Astral does it
-  // like this but idk why, read_msr works while this faults so...
-  cpu = (cpu_t *)read_msr(MSR_GSBASE);
-
-  return cpu;
-}
+cpu_t inline *get_cpu(void) { return (cpu_t *)read_msr(MSR_GSBASE); }
 
 void inline set_cpu(cpu_t *ptr) { write_msr(MSR_GSBASE, (uint64_t)ptr); }
 
@@ -59,12 +57,16 @@ void awake(struct limine_mp_info *info) {
   set_cpu((cpu_t *)info->extra_argument); // We stashed the cpu context in the
                                           // extra argument the Limine gives us.
   get_cpu()->lapic_base = read_msr(MSR_IA32_APIC_BASE);
-  get_cpu()->local_id = __atomic_fetch_add(&id, 1, __ATOMIC_SEQ_CST);
+  get_cpu()->id = __atomic_fetch_add(&id, 1, __ATOMIC_SEQ_CST);
 
   // k_debug("lapic base: %p", get_cpu()->lapic_base);
   // k_debug("lapic id: %d", get_cpu()->local_id);
 
-  k_log("hello world from cpu %d!", get_cpu()->local_id);
+  switch_kernel_pagemap();
+
+  bootstrap_apic_no_timer();
+
+  k_debug("Setup CPU %d", get_cpu()->id);
 
   __atomic_fetch_add(&cpus_awake, 1, __ATOMIC_SEQ_CST);
 
@@ -91,16 +93,25 @@ void setup_cpus() {
 
   for (int i = 0; i < mp->cpu_count; ++i) {
     // skip the bootstrap processor
-    if (mp->cpus[i]->lapic_id == mp->bsp_lapic_id) {
-      continue;
+    bool bsp = mp->cpus[i]->lapic_id == mp->bsp_lapic_id;
+
+    if (bsp) {
+      cpu_t bsp;
+      bsp.lapic_id = mp->bsp_lapic_id;
+      bsp.id = 0;
+
+      smp_cpus[i] = &bsp;
+      mp->cpus[i]->extra_argument = (uint64_t)&bsp;
+
+      set_cpu((cpu_t *)mp->cpus[i]->extra_argument);
+    } else {
+      smp_cpus[i] = &cpus[i];
+      mp->cpus[i]->extra_argument = (uint64_t)&cpus[i];
+      __atomic_store_n(&mp->cpus[i]->goto_address, awake, __ATOMIC_SEQ_CST);
     }
-
-    smp_cpus[i] = &cpus[i];
-
-    mp->cpus[i]->extra_argument = (uint64_t)&cpus[i];
-
-    __atomic_store_n(&mp->cpus[i]->goto_address, awake, __ATOMIC_SEQ_CST);
   }
+
+  set_state(SMP_INITIALIZED, 0xff);
 
   while (__atomic_load_n(&cpus_awake, __ATOMIC_SEQ_CST) != mp->cpu_count)
     asm("pause");

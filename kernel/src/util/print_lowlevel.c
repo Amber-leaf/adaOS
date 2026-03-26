@@ -26,8 +26,8 @@ static uint32_t *fb_ptr;
 
 extern uint64_t font[128]; // From font.c
 
-spinlock_t fb_lock;
-spinlock_t string_lock;
+SPINLOCK_DEFINE(fb_lock);
+SPINLOCK_DEFINE(string_lock);
 
 void calculate_screen_constants(struct limine_framebuffer *fb) {
   width = fb->width;

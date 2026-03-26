@@ -146,13 +146,58 @@ void bootstrap_apic() {
 
   apic_start_timer();
 
+  k_debug("started timer");
+
   // bind_timer(get_apic_ticks, get_apic_ticks, apic_sleep_ms);
 
   write_lvt_entry(APIC_LVT_THERMAL, 0xf2);
   write_lvt_entry(APIC_LVT_ERROR, 0xf6);
+  //  TODO: the rest of these
+
+  k_debug("wrote lvt");
 
   unmask_irq(4);
+
+  k_debug("unmasked irq");
+}
+
+// For debuging only
+void bootstrap_apic_no_timer() {
+  struct local_apic_r apic = get_apic();
+
+  k_debug("mapping bs LAPIC to v%p from p%p", apic.apic_address + HIGHER_HALF,
+          apic.apic_address);
+
+  apic_virt = (uint64_t)apic.apic_address + HIGHER_HALF;
+
+  if (!map_page(kernel_pagemap, apic_virt, (uintptr_t)apic.apic_address,
+                PTE_WRITABLE | PTE_NX | PTE_PCD)) {
+    panic("Could not map APIC to virtual memory!");
+  }
+
+  k_debug("apic version: %X", read_register(APIC_VERSION));
+
+  if (read_register(APIC_VERSION) < 0x10) {
+    panic("82489DX (APIC versions under 0x10) are unsupported.");
+  }
+
+  write_register(APIC_SPURIOUS_INT_VECTOR, 0x1F0);
+
+  if (read_register(APIC_SPURIOUS_INT_VECTOR) != 0x1F0) {
+    panic("Could not enable APIC!");
+  }
+
+  k_debug("apic id: 0x%x", read_register(APIC_ID));
+
+  write_lvt_entry(APIC_LVT_THERMAL, 0xf2);
+  write_lvt_entry(APIC_LVT_ERROR, 0xf6);
   //  TODO: the rest of these
+
+  k_debug("wrote lvt");
+
+  unmask_irq(4);
+
+  k_debug("unmasked irq");
 }
 
 void setup_cpu() {}

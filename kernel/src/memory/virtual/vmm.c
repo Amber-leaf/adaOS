@@ -294,3 +294,5 @@ void setup_vmm() {
 
   switch_to_pagemap(kernel_pagemap);
 }
+
+void switch_kernel_pagemap() { switch_to_pagemap(kernel_pagemap); }

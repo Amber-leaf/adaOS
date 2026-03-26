@@ -1,4 +1,5 @@
 #include "../platform/x86_64/header/apic.h"
+#include "../platform/x86_64/header/cpu.h"
 #include "../platform/x86_64/header/pit.h"
 #include "../scheduler/header/scheduler.h"
 #include "header/print_lowlevel.h"
@@ -26,7 +27,7 @@
 #define TEST_FAIL_FREQUENCY 400
 #define TEST_FAIL_HOLD 400
 
-spinlock_t log_lock;
+SPINLOCK_DEFINE(log_lock);
 
 void k_debug(char *format, ...) {
 #ifdef DBG
@@ -35,6 +36,12 @@ void k_debug(char *format, ...) {
   va_start(va, format);
 
   set_text_colour(DBG_TEXT_COLOUR);
+
+  if (get_global_state().smp_initialized) {
+    // k_puti(get_cpu()->local_id);
+    printf_("(CPU %d) ", get_cpu()->id);
+  }
+
   k_puts("[DBG] Kernel: ");
   vprintf(format, va);
   va_end(va);

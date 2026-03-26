@@ -19,7 +19,7 @@ void bind_timer(cpu_time_t (*ticks_callback)(void),
   new_timer.sleep_ms_callback = sleep_ms_callback;
   k_debug("before");
 
-  new_timer.synced_cpu_id = this_cpu()->local_id;
+  new_timer.synced_cpu_id = get_cpu()->id;
   k_debug("got cpu");
 
   new_timer.bound = true;
@@ -27,17 +27,16 @@ void bind_timer(cpu_time_t (*ticks_callback)(void),
 }
 
 cpu_timer_t get_timer() {
-  if (this_cpu()->timer.bound)
-    return this_cpu()->timer;
+  if (get_cpu()->timer.bound)
+    return get_cpu()->timer;
   else {
     for (uint8_t i = 0; i < bound_index; i++) {
-      if (this_cpu()->local_id == timers[i].synced_cpu_id) {
-        this_cpu()->timer = timers[i];
+      if (get_cpu()->id == timers[i].synced_cpu_id) {
+        get_cpu()->timer = timers[i];
         return timers[i];
       }
     }
-    k_wrn("Timer for %d is unbound, scheduler is gonna tweak.",
-          this_cpu()->local_id);
-    return this_cpu()->timer;
+    k_wrn("Timer for %d is unbound, scheduler is gonna tweak.", get_cpu()->id);
+    return get_cpu()->timer;
   }
 }
