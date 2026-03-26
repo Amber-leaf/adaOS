@@ -63,7 +63,7 @@ void pit_sleep_ms(uint32_t ms) {
       end_ticks = start_ticks + (ms * timer_goal_frequency) / 1000;
     }
 
-    asm volatile("hlt");
+    asm volatile("pause");
   }
 }
 
