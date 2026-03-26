@@ -59,12 +59,11 @@ void awake(struct limine_mp_info *info) {
   get_cpu()->lapic_base = read_msr(MSR_IA32_APIC_BASE);
   get_cpu()->id = __atomic_fetch_add(&id, 1, __ATOMIC_SEQ_CST);
 
-  // k_debug("lapic base: %p", get_cpu()->lapic_base);
-  // k_debug("lapic id: %d", get_cpu()->local_id);
-
   switch_kernel_pagemap();
 
   bootstrap_apic_no_timer();
+
+  get_cpu()->lapic_id = read_register(APIC_ID);
 
   k_debug("Setup CPU %d", get_cpu()->id);
 

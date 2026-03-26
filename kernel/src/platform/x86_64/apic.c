@@ -103,7 +103,7 @@ void apic_sleep_ms(uint32_t ms) {
       end_ms = start_ms + ms;
     }
 
-    asm volatile("hlt");
+    asm volatile("pause");
   }
 }
 
@@ -194,6 +194,8 @@ void bootstrap_apic_no_timer() {
   //  TODO: the rest of these
 
   k_debug("wrote lvt");
+
+  apic_start_timer();
 
   unmask_irq(4);
 

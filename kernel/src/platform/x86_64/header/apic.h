@@ -89,5 +89,6 @@ void send_eio();
 void send_ipi(uint32_t apic_id, uint8_t isr_index);
 
 struct local_apic_r get_apic();
+uint32_t read_register(uintptr_t offset);
 
 #endif
