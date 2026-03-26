@@ -79,8 +79,6 @@ typedef struct __attribute__((packed)) icr {
 } icr_t;
 
 void bootstrap_apic();
-void bootstrap_apic_no_timer();
-
 
 void apic_sleep_ms(uint32_t ms);
 
@@ -89,6 +87,6 @@ void send_eio();
 void send_ipi(uint32_t apic_id, uint8_t isr_index);
 
 struct local_apic_r get_apic();
-uint32_t read_register(uintptr_t offset);
+uint32_t read_apic_register(uintptr_t offset);
 
 #endif

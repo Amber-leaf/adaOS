@@ -38,7 +38,6 @@ void k_debug(char *format, ...) {
   set_text_colour(DBG_TEXT_COLOUR);
 
   if (get_global_state().smp_initialized) {
-    // k_puti(get_cpu()->local_id);
     printf_("(CPU %d) ", get_cpu()->id);
   }
 

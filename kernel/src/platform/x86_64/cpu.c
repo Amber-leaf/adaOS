@@ -61,9 +61,9 @@ void awake(struct limine_mp_info *info) {
 
   switch_kernel_pagemap();
 
-  bootstrap_apic_no_timer();
+  bootstrap_apic();
 
-  get_cpu()->lapic_id = read_register(APIC_ID);
+  get_cpu()->lapic_id = read_apic_register(APIC_ID);
 
   k_debug("Setup CPU %d", get_cpu()->id);
 
@@ -91,7 +91,6 @@ void setup_cpus() {
   smp_cpus = kmalloc(mp->cpu_count * sizeof(cpu_t *));
 
   for (int i = 0; i < mp->cpu_count; ++i) {
-    // skip the bootstrap processor
     bool bsp = mp->cpus[i]->lapic_id == mp->bsp_lapic_id;
 
     if (bsp) {

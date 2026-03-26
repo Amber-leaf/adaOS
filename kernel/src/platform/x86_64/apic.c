@@ -55,7 +55,7 @@ void write_register(uintptr_t offset, uint32_t value) {
   ((volatile uint32_t *)(apic_virt + offset))[0] = value;
 }
 
-uint32_t read_register(uintptr_t offset) {
+uint32_t read_apic_register(uintptr_t offset) {
   return ((volatile uint32_t *)(apic_virt + offset))[0];
 }
 
@@ -78,7 +78,7 @@ void apic_start_timer() {
   write_register(APIC_LVT_TIMER, (1 << 16));
 
   uint32_t ticks_1ms =
-      (0xFFFFFFFF - read_register(APIC_TIMER_CURRENT_COUNT)) / 600;
+      (0xFFFFFFFF - read_apic_register(APIC_TIMER_CURRENT_COUNT)) / 600;
 
   k_debug("Estimated bus frequency: %dMhz", ticks_1ms);
 
@@ -130,19 +130,19 @@ void bootstrap_apic() {
     panic("Could not map APIC to virtual memory!");
   }
 
-  k_debug("apic version: %X", read_register(APIC_VERSION));
+  k_debug("apic version: %X", read_apic_register(APIC_VERSION));
 
-  if (read_register(APIC_VERSION) < 0x10) {
+  if (read_apic_register(APIC_VERSION) < 0x10) {
     panic("82489DX (APIC versions under 0x10) are unsupported.");
   }
 
   write_register(APIC_SPURIOUS_INT_VECTOR, 0x1F0);
 
-  if (read_register(APIC_SPURIOUS_INT_VECTOR) != 0x1F0) {
+  if (read_apic_register(APIC_SPURIOUS_INT_VECTOR) != 0x1F0) {
     panic("Could not enable APIC!");
   }
 
-  k_debug("apic id: 0x%x", read_register(APIC_ID));
+  k_debug("apic id: 0x%x", read_apic_register(APIC_ID));
 
   apic_start_timer();
 
@@ -155,47 +155,6 @@ void bootstrap_apic() {
   //  TODO: the rest of these
 
   k_debug("wrote lvt");
-
-  unmask_irq(4);
-
-  k_debug("unmasked irq");
-}
-
-// For debuging only
-void bootstrap_apic_no_timer() {
-  struct local_apic_r apic = get_apic();
-
-  k_debug("mapping bs LAPIC to v%p from p%p", apic.apic_address + HIGHER_HALF,
-          apic.apic_address);
-
-  apic_virt = (uint64_t)apic.apic_address + HIGHER_HALF;
-
-  if (!map_page(kernel_pagemap, apic_virt, (uintptr_t)apic.apic_address,
-                PTE_WRITABLE | PTE_NX | PTE_PCD)) {
-    panic("Could not map APIC to virtual memory!");
-  }
-
-  k_debug("apic version: %X", read_register(APIC_VERSION));
-
-  if (read_register(APIC_VERSION) < 0x10) {
-    panic("82489DX (APIC versions under 0x10) are unsupported.");
-  }
-
-  write_register(APIC_SPURIOUS_INT_VECTOR, 0x1F0);
-
-  if (read_register(APIC_SPURIOUS_INT_VECTOR) != 0x1F0) {
-    panic("Could not enable APIC!");
-  }
-
-  k_debug("apic id: 0x%x", read_register(APIC_ID));
-
-  write_lvt_entry(APIC_LVT_THERMAL, 0xf2);
-  write_lvt_entry(APIC_LVT_ERROR, 0xf6);
-  //  TODO: the rest of these
-
-  k_debug("wrote lvt");
-
-  apic_start_timer();
 
   unmask_irq(4);
 
