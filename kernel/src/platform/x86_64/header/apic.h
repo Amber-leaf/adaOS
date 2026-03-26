@@ -4,16 +4,17 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#define APIC_ID 0x020           /* APIC ID Register (Read/Write) */
-#define APIC_VERSION 0x030      /* APIC Version Register (Read only) */
-#define APIC_TPR 0x080          /* Task Priority Register (Read/Write) */
-#define APIC_APR 0x090          /* Arbitration Priority Register (Read only) */
-#define APIC_PPR 0x0A0          /* Processor Priority Register (Read only) */
-#define APIC_EOI 0x0B0          /* EOI Register (Write only) */
-#define APIC_RRD 0x0C0          /* Remote Read Register (Read only) */
-#define APIC_LOGICAL_DEST 0x0D0 /* Logical Destination Register (Read/Write)   \
-                                 */
-#define APIC_DEST_FORMAT 0x0E0  /* Destination Format Register (Read/Write) */
+#define APIC_ID 0x020      /* APIC ID Register (Read/Write) */
+#define APIC_VERSION 0x030 /* APIC Version Register (Read only) */
+#define APIC_TPR 0x080     /* Task Priority Register (Read/Write) */
+#define APIC_APR 0x090     /* Arbitration Priority Register (Read only) */
+#define APIC_PPR 0x0A0     /* Processor Priority Register (Read only) */
+#define APIC_EOI 0x0B0     /* EOI Register (Write only) */
+#define APIC_RRD 0x0C0     /* Remote Read Register (Read only) */
+#define APIC_LOGICAL_DEST                                                      \
+  0x0D0                        /* Logical Destination Register (Read/Write)    \
+                                */
+#define APIC_DEST_FORMAT 0x0E0 /* Destination Format Register (Read/Write) */
 #define APIC_SPURIOUS_INT_VECTOR                                               \
   0x0F0 /* Spurious Interrupt Vector Register (Read/Write) */
 #define APIC_ISR_BASE                                                          \
@@ -87,6 +88,7 @@ void send_eio();
 void send_ipi(uint32_t apic_id, uint8_t isr_index);
 
 struct local_apic_r get_apic();
+
 uint32_t read_apic_register(uintptr_t offset);
 
 #endif

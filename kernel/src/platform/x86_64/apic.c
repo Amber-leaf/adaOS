@@ -80,7 +80,7 @@ void apic_start_timer() {
   uint32_t ticks_1ms =
       (0xFFFFFFFF - read_apic_register(APIC_TIMER_CURRENT_COUNT)) / 600;
 
-  k_debug("Estimated bus frequency: %dMhz", ticks_1ms);
+  k_debug("Estimated bus frequency: %dKhz", ticks_1ms);
 
   write_register(APIC_LVT_TIMER, 0xf1 | 0x20000);
   write_register(APIC_TIMER_DIVIDE_CONFIG, 0x3);
@@ -146,21 +146,11 @@ void bootstrap_apic() {
 
   apic_start_timer();
 
-  k_debug("started timer");
-
-  // bind_timer(get_apic_ticks, get_apic_ticks, apic_sleep_ms);
-
   write_lvt_entry(APIC_LVT_THERMAL, 0xf2);
   write_lvt_entry(APIC_LVT_ERROR, 0xf6);
   //  TODO: the rest of these
 
-  k_debug("wrote lvt");
-
   unmask_irq(4);
-
-  k_debug("unmasked irq");
 }
-
-void setup_cpu() {}
 
 void send_eio() { write_register(APIC_EOI, 0); }
