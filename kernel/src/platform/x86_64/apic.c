@@ -2,11 +2,10 @@
 
 #include <stdint.h>
 
-#include "../../platform/x86_64/header/timing.h"
-
 #include "../../interupt/header/apic_timer.h"
 #include "../../memory/header/memmap.h"
 #include "../../memory/virtual/header/vmm.h"
+#include "../../util/header/bits.h"
 #include "../../util/header/log.h"
 #include "../../util/header/panic.h"
 #include "../../util/header/state.h"
@@ -64,9 +63,12 @@ void write_icr(icr_t isr, uint32_t apic_id) {
     k_wrn("APIC ID has no effect with destination types greater than 0!");
   }
 
-  write_register(APIC_ICR_HIGH, apic_id >> 24);
+  write_register(APIC_ICR_HIGH, extract_bit_range(apic_id, 27, 24));
 
-  write_register(APIC_ICR_LOW, *(uint32_t *)&isr);
+  k_debug("a %d", sizeof(icr_t));
+
+  // write_register(APIC_ICR_LOW, (uint32_t)&isr);
+  k_debug("b");
 }
 
 void apic_start_timer() {

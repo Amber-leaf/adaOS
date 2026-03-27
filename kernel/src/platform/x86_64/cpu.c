@@ -87,6 +87,9 @@ void setup_cpus() {
   }
 
   cpu_t *cpus = HIGHER_HALF + pp_alloc();
+  cpu_t *bsp_c = kmalloc(sizeof(cpu_t));
+
+  struct limine_mp_info *bsp_info;
 
   smp_cpus = kmalloc(mp->cpu_count * sizeof(cpu_t *));
 
@@ -94,25 +97,27 @@ void setup_cpus() {
     bool bsp = mp->cpus[i]->lapic_id == mp->bsp_lapic_id;
 
     if (bsp) {
-      cpu_t bsp;
-      bsp.lapic_id = mp->bsp_lapic_id;
-      bsp.id = 0;
+      bsp_c->lapic_id = mp->bsp_lapic_id;
+      bsp_c->id = 0;
 
-      smp_cpus[i] = &bsp;
-      mp->cpus[i]->extra_argument = (uint64_t)&bsp;
+      bsp_info = mp->cpus[i];
 
-      set_cpu((cpu_t *)mp->cpus[i]->extra_argument);
+      smp_cpus[i] = bsp_c;
+      mp->cpus[i]->extra_argument = (uintptr_t)&bsp_c;
+
+      set_cpu(bsp_c);
     } else {
       smp_cpus[i] = &cpus[i];
-      mp->cpus[i]->extra_argument = (uint64_t)&cpus[i];
+      mp->cpus[i]->extra_argument = (uintptr_t)&cpus[i];
       __atomic_store_n(&mp->cpus[i]->goto_address, awake, __ATOMIC_SEQ_CST);
     }
   }
 
   set_state(SMP_INITIALIZED, 0xff);
 
-  while (__atomic_load_n(&cpus_awake, __ATOMIC_SEQ_CST) != mp->cpu_count)
+  while (__atomic_load_n(&cpus_awake, __ATOMIC_SEQ_CST) != mp->cpu_count) {
     asm("pause");
+  }
 
   k_debug("Started other CPUs");
 }

@@ -5,6 +5,7 @@
 #include "header/print_lowlevel.h"
 #include "header/printf.h"
 #include "header/state.h"
+#include <stdint.h>
 
 #define PLAIN_TEXT_COLOUR 0xb0b0b0
 
@@ -38,7 +39,7 @@ void k_debug(char *format, ...) {
   set_text_colour(DBG_TEXT_COLOUR);
 
   if (get_global_state().smp_initialized) {
-    printf_("(CPU %d) ", get_cpu()->id);
+    printf_("(CPU %d) ", (uint64_t)get_cpu()->id);
   }
 
   k_puts("[DBG] Kernel: ");

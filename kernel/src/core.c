@@ -26,7 +26,7 @@
 #include "platform/x86_64/header/pic.h"
 #include "platform/x86_64/header/pit.h"
 #include "platform/x86_64/header/rtc.h"
-#include "platform/x86_64/header/timing.h"
+#include "scheduler/header/scheduler.h"
 #include "util/header/log.h"
 #include "util/header/panic.h"
 #include "util/header/print_lowlevel.h"
@@ -299,6 +299,8 @@ void kmain(void) {
     k_test_fail("Heap Pointer was Bogus!");
   }
 
+  memset(p, 0x00, PAGE_SIZE * 1.5);
+
   kfree(p);
 
   bootstrap_apic(); // TODO: cleanly fail and use PIT as timer instead.
@@ -336,6 +338,10 @@ void kmain(void) {
   setup_cpus();
 
   k_ok("Setup CPUs");
+
+  setup_scheduler();
+
+  k_ok("Started Scheduler");
 
   // k_debug("%d", get_timer().bound);
 
