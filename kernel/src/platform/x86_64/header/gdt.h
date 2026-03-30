@@ -37,6 +37,8 @@ extern void lgdt(struct gdt_r* gdtd);
 extern void ltr(uint16_t ltr);
 extern void reload_segments();
 
-extern void setup_gdt();
+void setup_gdt();
+
+void switch_tss_stack(uintptr_t new_stack);
 
 #endif

@@ -44,7 +44,7 @@ int heap_grow_pages(size_t pages) {
 
     uintptr_t virt = base + (i * PAGE_SIZE);
     if (!map_page(kernel_pagemap, virt, (uintptr_t)phys,
-                  PTE_PRESENT | PTE_WRITABLE | PTE_NX)) {
+                  PTE_PRESENT | PTE_WRITABLE)) {
       panic("heap_expand_pages: vmm_map_page failed");
       return 0;
     }

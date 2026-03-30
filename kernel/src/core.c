@@ -343,7 +343,7 @@ void kmain(void) {
 
   k_ok("Started Scheduler");
 
-  // k_debug("%d", get_timer().bound);
+  // apic_interrupt_ms(1000);
 
   k_log("At end of implemented features, hanging.");
 

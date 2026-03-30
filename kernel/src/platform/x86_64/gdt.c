@@ -62,3 +62,5 @@ void setup_gdt() {
 
   ltr(0x30);
 }
+
+void switch_tss_stack(uintptr_t new_stack) { tss.rsp0 = new_stack; }

@@ -13,36 +13,35 @@
 #define SIGKILL 0;
 #define SIGSTOP 1;
 
+#define STATUS_WAIT 0
+#define STATUS_DEAD 1
+#define STATUS_RUNNING 2
+#define STATUS_WAIT_ON_EXIT 3
+
+
 typedef bool spinlock_t;
 typedef uint32_t thread_id_t;
-typedef uint32_t proccess_id_t;
-
 typedef uint8_t signal_t;
 
 typedef struct thread {
   thread_id_t id;
 
-  uintptr_t* stack_ptr;
+  uintptr_t *stack_ptr;
 
-  void* stack_base;
-  void* stack_bounds;
+  void *stack_base;
+  void *stack_bounds;
 
   bool kernel_thread;
 
   uint8_t status;
-
-  pagemap_t* pagemap;
-
-  uint32_t allotment;
-} thread_t;
-
-struct execution_queue {
-  uint64_t preempt_quantum;
-  thread_t** entries;
-  size_t last_added;
-  size_t num_entries; 
   uint8_t priority;
-};
+  int32_t allotment;
+
+  pagemap_t *pagemap;
+
+  uint64_t times_ran;
+
+} thread_t;
 
 void setup_scheduler();
 

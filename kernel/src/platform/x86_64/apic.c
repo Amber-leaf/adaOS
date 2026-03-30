@@ -1,5 +1,6 @@
 #include "header/apic.h"
 
+#include <stdbool.h>
 #include <stdint.h>
 
 #include "../../interupt/header/apic_timer.h"
@@ -18,6 +19,10 @@ static struct local_apic_r apic;
 uintptr_t apic_virt;
 
 extern pagemap_t *kernel_pagemap;
+
+uint32_t ticks_1ms;
+
+bool interrupt_as_timer;
 
 struct local_apic_r get_apic() {
   uint64_t data = read_msr(MSR_IA32_APIC_BASE);
@@ -79,8 +84,7 @@ void apic_start_timer() {
 
   write_register(APIC_LVT_TIMER, (1 << 16));
 
-  uint32_t ticks_1ms =
-      (0xFFFFFFFF - read_apic_register(APIC_TIMER_CURRENT_COUNT)) / 600;
+  ticks_1ms = (0xFFFFFFFF - read_apic_register(APIC_TIMER_CURRENT_COUNT)) / 600;
 
   k_debug("Estimated bus frequency: %dKhz", ticks_1ms);
 
@@ -88,12 +92,13 @@ void apic_start_timer() {
   write_register(APIC_TIMER_DIVIDE_CONFIG, 0x3);
   write_register(APIC_TIMER_INITIAL_COUNT, ticks_1ms);
 
-  unmask_irq(0);
+  interrupt_as_timer = true;
 
-  set_state(PIT_TIMER_RUNNING, false);
+  unmask_irq(0);
 }
 
 void apic_sleep_ms(uint32_t ms) {
+  interrupt_as_timer = true;
   uint64_t start_ms = get_apic_ticks();
   uint64_t end_ms = start_ms + ms;
 
@@ -107,6 +112,16 @@ void apic_sleep_ms(uint32_t ms) {
 
     asm volatile("pause");
   }
+}
+
+void apic_interrupt_ms(uint32_t ms) {
+  interrupt_as_timer = false;
+  write_register(APIC_TIMER_INITIAL_COUNT, ticks_1ms * ms);
+}
+
+void apic_restore_state() {
+  interrupt_as_timer = true;
+  write_register(APIC_TIMER_INITIAL_COUNT, ticks_1ms);
 }
 
 // FIXME: Not working
