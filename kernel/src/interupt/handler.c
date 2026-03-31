@@ -11,6 +11,8 @@
 #include "header/pit_handler.h"
 #include "header/rs232_handler.h"
 
+extern bool interrupt_as_timer;
+
 void print_cpu_status_interrupt(struct interrupt_cpu_status *context) {
   printf_("Vector: %llu  Error Code: %016llx\n---\n", context->vector_number,
           context->error_code);

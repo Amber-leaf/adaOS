@@ -2,6 +2,7 @@
 #define SCHEDULER_H_
 
 #include "../../memory/virtual/header/vmm.h"
+#include "../../util/header/printf.h"
 
 #include <stddef.h>
 #include <stdint.h>
@@ -18,7 +19,6 @@
 #define STATUS_RUNNING 2
 #define STATUS_WAIT_ON_EXIT 3
 
-
 typedef bool spinlock_t;
 typedef uint32_t thread_id_t;
 typedef uint8_t signal_t;
@@ -26,7 +26,7 @@ typedef uint8_t signal_t;
 typedef struct thread {
   thread_id_t id;
 
-  uintptr_t *stack_ptr;
+  uintptr_t stack_ptr;
 
   void *stack_base;
   void *stack_bounds;
@@ -44,6 +44,7 @@ typedef struct thread {
 } thread_t;
 
 void setup_scheduler();
+void preempt();
 
 static inline bool spinlock_try(spinlock_t *lock) {
   return __sync_bool_compare_and_swap(lock, false, true);
@@ -51,8 +52,10 @@ static inline bool spinlock_try(spinlock_t *lock) {
 
 static inline void spinlock_acquire(spinlock_t *lock) {
   while (!__sync_bool_compare_and_swap(lock, false, true)) {
-    while (*lock)
+    while (*lock) {
+      //serial_printf("Spining");
       asm volatile("pause" : : : "memory");
+    }
   }
 }
 

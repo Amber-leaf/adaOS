@@ -2,6 +2,8 @@ section .text
 
 global task_switch
 task_switch:
+    sti
+
     pushfq
     push rbx
     push rbp
@@ -10,20 +12,17 @@ task_switch:
     push r14
     push r15
 
-
-
     mov [rdi], rsp
     mov rsp, rsi
-
     
-    ;pop r15
-    ;pop r14
-    ;pop r13
-    ;pop r12
-    ;pop rbp
-    ;pop rbx
+    pop r15
+    pop r14
+    pop r13
+    pop r12
+    pop rbp
+    pop rbx
     popfq
 
-
+    cli
 
     ret

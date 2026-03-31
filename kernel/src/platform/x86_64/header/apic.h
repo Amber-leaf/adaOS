@@ -93,6 +93,4 @@ uint32_t read_apic_register(uintptr_t offset);
 
 void apic_interrupt_ms(uint32_t ms);
 
-void apic_restore_state();
-
 #endif

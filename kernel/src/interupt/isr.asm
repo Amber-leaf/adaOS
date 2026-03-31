@@ -30,6 +30,7 @@ isr%1:
 %endmacro
 
 exception_handler_asm:
+    cli
     push rax
     push rbx
     push rcx
@@ -66,6 +67,7 @@ exception_handler_asm:
     pop rax
 
     add rsp, 16
+    sti
     iretq
 
 isr_stub_table:

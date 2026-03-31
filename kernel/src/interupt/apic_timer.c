@@ -1,5 +1,6 @@
 #include "../platform/x86_64/header/apic.h"
-#include "../util/header/log.h"
+#include "../scheduler/header/scheduler.h"
+#include "../util/header/printf.h"
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -9,12 +10,20 @@ extern bool interrupt_as_timer;
 uint64_t apic_ticks = 0;
 
 void apic_timer_irq() {
-  if (interrupt_as_timer) {
-    apic_ticks++;
-  } else {
-    k_debug("APIC Interrupt non-timer");
-    apic_restore_state();
+  //__asm__ __volatile__("cli");
+
+  serial_printf("timer int");
+  apic_ticks++;
+
+  if (!interrupt_as_timer) {
+    serial_printf_("\npreempt irq\n");
+    // interrupt_as_timer = true;
+    apic_interrupt_ms(1000);
+
+    preempt();
   }
+
+  //__asm__ __volatile__("sti");
 }
 
 uint64_t get_apic_ticks() { return apic_ticks; }

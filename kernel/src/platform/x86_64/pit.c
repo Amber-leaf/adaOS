@@ -18,6 +18,8 @@
 
 uint32_t timer_goal_frequency;
 
+bool pit_as_scheduler_timer = false;
+
 void set_pit_frequency(uint32_t frequency) {
   uint32_t divisor = PIT_FREQUENCY / frequency;
   outb(PIT_CONTROL_PORT, 0x36);
@@ -33,6 +35,8 @@ void set_speaker_frequency(uint32_t frequency) {
 }
 
 void play_sound(uint32_t frequency) {
+  pit_as_scheduler_timer = false;
+
   if (frequency == 0) {
     return;
   }
@@ -50,6 +54,7 @@ void sound_off() {
 }
 
 void pit_sleep_ms(uint32_t ms) {
+  pit_as_scheduler_timer = false;
   set_pit_frequency(timer_goal_frequency);
 
   uint64_t start_ticks = get_pit_ticks();
@@ -65,6 +70,11 @@ void pit_sleep_ms(uint32_t ms) {
 
     asm volatile("pause");
   }
+}
+
+void pit_interrupt_ms(uint32_t ms) {
+  pit_as_scheduler_timer = true;
+  set_pit_frequency(timer_goal_frequency / ms);
 }
 
 void setup_pit() {
