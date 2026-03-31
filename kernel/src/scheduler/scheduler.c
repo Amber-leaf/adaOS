@@ -200,7 +200,7 @@ void preempt() {
   //__asm__ __volatile__("cli");
   serial_printf_("preempt\n");
 
-  // spinlock_acquire(&scheduler_lock);
+  spinlock_acquire(&scheduler_lock);
 
   if (running_thread != NULL) {
     last_running_thread = running_thread;
