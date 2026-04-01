@@ -120,14 +120,19 @@ void thread_yield() {
 
 void thread_debug() {
 top:
-  k_debug("thread %d", running_thread->id);
+  __asm__ __volatile__("cli");
+
+  k_debug("yo im thread %d", running_thread->id);
+
+  __asm__ __volatile__("sti");
+
   // unmask_irq(0);
   // unmask_irq(4);
 
   //__asm__ __volatile__("int $0xf1");
 
   // thread_yield();
-  // goto top;
+  goto top;
 }
 
 thread_t *make_inital_kernel_thread() {
@@ -221,7 +226,7 @@ void preempt() {
     return;
   }
 
-  // spinlock_acquire(&scheduler_lock);
+  spinlock_acquire(&scheduler_lock);
 
   serial_printf_("0\n");
 
@@ -282,16 +287,16 @@ void preempt() {
   k_debug("Runing thread %d (pri: %d, allot: %d)", running_thread->id,
           running_thread->priority, running_thread->allotment);
 
-  // spinlock_release(&scheduler_lock);
+  spinlock_release(&scheduler_lock);
 
   serial_printf_("try switch\n");
 
-  apic_interrupt_ms(BASE_PREEMPT_QUANTUM_MS);
+  apic_interrupt_ms(BASE_PREEMPT_QUANTUM_MS * (running_thread->priority + 1));
 
   uint64_t *old_rsp = &last_running_thread->stack_ptr;
   uint64_t new_rsp = running_thread->stack_ptr;
 
-  if (new_rsp < 0x1000000) {
+  if (!new_rsp) {
     k_err("Bad stack ptr");
     return;
   }

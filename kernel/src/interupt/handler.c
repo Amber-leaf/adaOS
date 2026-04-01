@@ -57,7 +57,7 @@ void exception_handler(struct interrupt_cpu_status *context) {
     unimplemented_fault("Division Error (#DE)", context);
     break;
   case 0x1: // #DB Debug
-    unimplemented_trap("Debug (#DB)", context);
+    // unimplemented_trap("Debug (#DB)", context);
     break;
   case 0x2: // NMI Non-maskable Interrupt
     unimplemented_fault("Non-maskable Interrupt", context);
