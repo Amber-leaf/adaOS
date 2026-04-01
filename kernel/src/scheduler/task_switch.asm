@@ -2,7 +2,6 @@ section .text
 
 global task_switch
 task_switch:
-    sti
 
     pushfq
     push rbx
@@ -23,6 +22,6 @@ task_switch:
     pop rbx
     popfq
 
-    cli
+    sti
 
     ret

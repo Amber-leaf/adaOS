@@ -45,7 +45,7 @@ void calculate_screen_constants(struct limine_framebuffer *fb) {
 }
 
 void scroll(uint8_t lines) {
-  spinlock_acquire(&fb_lock);
+  // spinlock_acquire(&fb_lock);
 
   for (int n = 0; n < lines; n++) {
     for (uint32_t i = 0; i < cursor_y_max; i++) {
@@ -60,7 +60,7 @@ void scroll(uint8_t lines) {
     serial_writeb_blocking('\n');
   }
 
-  spinlock_release(&fb_lock);
+  // spinlock_release(&fb_lock);
 }
 
 void nl_cursor(void) {
@@ -94,7 +94,7 @@ void cursor_goto(uint32_t x, uint32_t y) {
 }
 
 void print_bitmap(uint64_t bitmap, uint32_t x, uint32_t y) {
-  spinlock_acquire(&fb_lock);
+  // spinlock_acquire(&fb_lock);
 
   for (int i = 0; i < 8; ++i) {
     uint8_t row = (bitmap >> ((7 - i) * 8)) & 0xFF;
@@ -112,7 +112,7 @@ void print_bitmap(uint64_t bitmap, uint32_t x, uint32_t y) {
     }
   }
 
-  spinlock_release(&fb_lock);
+  // spinlock_release(&fb_lock);
 }
 
 void set_text_colour(uint32_t colour) { on_colour = colour; }
@@ -122,7 +122,7 @@ void set_text_bg_colour(uint32_t colour) { off_colour = colour; }
 void set_skew(uint8_t n) { skew = n; }
 
 void clear(void) {
-  spinlock_acquire(&fb_lock);
+  // spinlock_acquire(&fb_lock);
 
   memset(fb_ptr, 0x00, bytes_per_screen);
 
@@ -130,7 +130,7 @@ void clear(void) {
 
   serial_write_string("Cleared VGA.\n");
 
-  spinlock_release(&fb_lock);
+  // spinlock_release(&fb_lock);
 }
 
 uint32_t calculate_y(void) { return cursor_y * 8 * font_size; }
@@ -166,14 +166,14 @@ void k_putc(uint16_t c) {
 }
 
 void k_puts(const char *s) {
-  spinlock_acquire(&string_lock);
+  // spinlock_acquire(&string_lock);
 
   uint8_t i = 0;
 
   for (;;) {
     switch (s[i]) {
     case 0x00:
-      spinlock_release(&string_lock);
+      // spinlock_release(&string_lock);
       return;
     case 0x0A:
       nl_cursor();
@@ -186,7 +186,7 @@ void k_puts(const char *s) {
     }
     i++;
   }
-  spinlock_release(&string_lock);
+  // spinlock_release(&string_lock);
 }
 
 void k_puti(uint32_t n) {

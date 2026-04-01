@@ -53,7 +53,7 @@ static inline bool spinlock_try(spinlock_t *lock) {
 static inline void spinlock_acquire(spinlock_t *lock) {
   while (!__sync_bool_compare_and_swap(lock, false, true)) {
     while (*lock) {
-      //serial_printf("Spining");
+      serial_printf("Spining");
       asm volatile("pause" : : : "memory");
     }
   }

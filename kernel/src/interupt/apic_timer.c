@@ -12,13 +12,11 @@ uint64_t apic_ticks = 0;
 void apic_timer_irq() {
   //__asm__ __volatile__("cli");
 
-  serial_printf("timer int");
   apic_ticks++;
 
   if (!interrupt_as_timer) {
-    serial_printf_("\npreempt irq\n");
     // interrupt_as_timer = true;
-    apic_interrupt_ms(1000);
+    // apic_interrupt_ms(1000);
 
     preempt();
   }

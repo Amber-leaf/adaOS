@@ -4,7 +4,9 @@
 #include "../memory/header/memmap.h"
 #include "../platform/x86_64/header/apic.h"
 #include "../platform/x86_64/header/gdt.h"
+#include "../platform/x86_64/header/pic.h"
 #include "../platform/x86_64/header/pit.h"
+
 #include "../util/header/log.h"
 #include "../util/header/print_lowlevel.h"
 #include "../util/header/printf.h"
@@ -43,6 +45,7 @@ uint32_t times_preempted = 0;
 uint32_t in_queue_thread_index = 0;
 
 void dump_threads() {
+  __asm__ __volatile__("cli");
   spinlock_acquire(&threads_lock);
   for (uint8_t i = 0; i < thread_count; i++) {
     thread_t *thread = threads[i];
@@ -52,10 +55,12 @@ void dump_threads() {
     k_debug("- times ran: %d", thread->times_ran);
   }
   spinlock_release(&threads_lock);
+  __asm__ __volatile__("sti");
 }
 
 void reorder_threads_list() {
-  spinlock_acquire(&threads_lock);
+  //__asm__ __volatile__("cli");
+  // spinlock_acquire(&threads_lock);
   for (uint32_t i = 1; i < thread_count; i++) {
     struct thread *key = threads[i];
 
@@ -67,28 +72,36 @@ void reorder_threads_list() {
     }
     threads[j + 1] = key;
   }
-  spinlock_release(&threads_lock);
+  // spinlock_release(&threads_lock);
+  //__asm__ __volatile__("sti");
 }
 
 void thread_destroy(thread_t *thread) {
-  spinlock_acquire(&threads_lock);
+  // spinlock_acquire(&threads_lock);
 
   // TODO: Shrink array if possible once done.
   for (uint32_t i = 0; i < thread_count; i++) {
     if (threads[i]->id == thread->id) {
       threads[i] = NULL;
+
+      for (uint32_t q = i; q < thread_count - 1; q++) {
+        threads[q] = threads[q + 1];
+      }
+
+      threads[thread_count--] = NULL;
+
       reorder_threads_list();
 
       kfree(thread->stack_base);
       kfree(thread);
-      spinlock_release(&threads_lock);
+      // spinlock_release(&threads_lock);
       return;
     }
   }
 
   k_err("Could not kill thread %d! Could not match IDs with a running thread!",
         thread->id);
-  spinlock_release(&threads_lock);
+  // spinlock_release(&threads_lock);
 }
 
 void thread_await_death() {
@@ -107,7 +120,10 @@ void thread_yield() {
 
 void thread_debug() {
 top:
-  k_debug("yo im thread %d", running_thread->id);
+  k_debug("thread %d", running_thread->id);
+  // unmask_irq(0);
+  // unmask_irq(4);
+
   //__asm__ __volatile__("int $0xf1");
 
   // thread_yield();
@@ -197,17 +213,28 @@ thread_t *thread_create(void (*entrypoint)(void), pagemap_t *pagemap) {
 }
 
 void preempt() {
-  //__asm__ __volatile__("cli");
+  __asm__ __volatile__("cli");
   serial_printf_("preempt\n");
 
-  spinlock_acquire(&scheduler_lock);
+  if (!thread_count) {
+    k_err("Asked to preempt with no threads!");
+    return;
+  }
+
+  // spinlock_acquire(&scheduler_lock);
+
+  serial_printf_("0\n");
 
   if (running_thread != NULL) {
     last_running_thread = running_thread;
   }
 
+  serial_printf_("1\n");
+
   uint32_t queue_number = threads[0]->priority;
   uint32_t queue_end_index = 0;
+
+  serial_printf_("2\n");
 
   bool s = times_preempted++ % S_QUANTUM == 0;
 
@@ -223,6 +250,8 @@ void preempt() {
       }
     }
   }
+
+  serial_printf_("a\n");
 
   if (in_queue_thread_index >= queue_end_index) {
     in_queue_thread_index = 0;
@@ -246,21 +275,28 @@ void preempt() {
 
   switch_tss_stack((uintptr_t)running_thread->stack_bounds);
 
-  running_thread->times_ran++;
+  serial_printf_("b\n");
 
-  __asm__ __volatile__("sti");
+  running_thread->times_ran++;
 
   k_debug("Runing thread %d (pri: %d, allot: %d)", running_thread->id,
           running_thread->priority, running_thread->allotment);
 
-  spinlock_release(&scheduler_lock);
+  // spinlock_release(&scheduler_lock);
 
   serial_printf_("try switch\n");
 
-  // apic_interrupt_ms(UINT32_MAX);
+  apic_interrupt_ms(BASE_PREEMPT_QUANTUM_MS);
 
   uint64_t *old_rsp = &last_running_thread->stack_ptr;
   uint64_t new_rsp = running_thread->stack_ptr;
+
+  if (new_rsp < 0x1000000) {
+    k_err("Bad stack ptr");
+    return;
+  }
+
+  __asm__ __volatile__("sti");
 
   task_switch(old_rsp, new_rsp);
 }
