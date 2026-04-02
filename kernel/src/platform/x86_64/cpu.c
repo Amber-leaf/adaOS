@@ -73,6 +73,8 @@ void awake(struct limine_mp_info *info) {
 }
 
 void setup_cpus() {
+  return;
+
   struct limine_mp_response *mp = get_mp_info();
 
   k_debug("our id: %X", mp->bsp_lapic_id);

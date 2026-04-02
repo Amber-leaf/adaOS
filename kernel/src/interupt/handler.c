@@ -95,7 +95,6 @@ void exception_handler(struct interrupt_cpu_status *context) {
     break;
   case 0xD: // #GP General Protection Fault
     unimplemented_fault("General Protection Fault (#GP)", context);
-    print_cpu_status_interrupt(context);
     hcf();
     break;
   case 0xE: // #PF Page Fault

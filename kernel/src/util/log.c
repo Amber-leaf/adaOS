@@ -32,6 +32,8 @@ SPINLOCK_DEFINE(log_lock);
 
 void k_debug(char *format, ...) {
 #ifdef DBG
+  __asm__ __volatile__("cli");
+
   spinlock_acquire(&log_lock);
   va_list va;
   va_start(va, format);
@@ -49,6 +51,8 @@ void k_debug(char *format, ...) {
   crlf();
 
   spinlock_release(&log_lock);
+
+  __asm__ __volatile__("sti");
 #endif
 }
 

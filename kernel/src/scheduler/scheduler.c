@@ -16,7 +16,7 @@
 
 #define THREAD_STACK_SIZE (PAGE_SIZE * 20)
 
-#define S_QUANTUM 0xff
+#define S_QUANTUM 0x200
 
 #define BASE_PREEMPT_QUANTUM_MS 10
 
@@ -45,7 +45,6 @@ uint32_t times_preempted = 0;
 uint32_t in_queue_thread_index = 0;
 
 void dump_threads() {
-  __asm__ __volatile__("cli");
   spinlock_acquire(&threads_lock);
   for (uint8_t i = 0; i < thread_count; i++) {
     thread_t *thread = threads[i];
@@ -55,12 +54,10 @@ void dump_threads() {
     k_debug("- times ran: %d", thread->times_ran);
   }
   spinlock_release(&threads_lock);
-  __asm__ __volatile__("sti");
 }
 
 void reorder_threads_list() {
-  //__asm__ __volatile__("cli");
-  // spinlock_acquire(&threads_lock);
+  spinlock_acquire(&threads_lock);
   for (uint32_t i = 1; i < thread_count; i++) {
     struct thread *key = threads[i];
 
@@ -72,12 +69,11 @@ void reorder_threads_list() {
     }
     threads[j + 1] = key;
   }
-  // spinlock_release(&threads_lock);
-  //__asm__ __volatile__("sti");
+  spinlock_release(&threads_lock);
 }
 
 void thread_destroy(thread_t *thread) {
-  // spinlock_acquire(&threads_lock);
+  spinlock_acquire(&threads_lock);
 
   // TODO: Shrink array if possible once done.
   for (uint32_t i = 0; i < thread_count; i++) {
@@ -90,18 +86,26 @@ void thread_destroy(thread_t *thread) {
 
       threads[thread_count--] = NULL;
 
+      spinlock_release(&threads_lock);
+
       reorder_threads_list();
+
+      spinlock_acquire(&threads_lock);
 
       kfree(thread->stack_base);
       kfree(thread);
-      // spinlock_release(&threads_lock);
+      spinlock_release(&threads_lock);
+      in_queue_thread_index = 0;
+
       return;
     }
   }
 
   k_err("Could not kill thread %d! Could not match IDs with a running thread!",
         thread->id);
-  // spinlock_release(&threads_lock);
+  in_queue_thread_index = 0;
+
+  spinlock_release(&threads_lock);
 }
 
 void thread_await_death() {
@@ -119,53 +123,30 @@ void thread_yield() {
 }
 
 void thread_debug() {
-top:
-  __asm__ __volatile__("cli");
+  uint32_t i = (uint32_t)(uintptr_t)kmalloc(sizeof(uint32_t));
+  i = 0;
 
-  k_debug("yo im thread %d", running_thread->id);
+  while (i < 1000000) {
+    i++;
+    k_debug("extra work..................");
+    k_debug("yo im thread %d, named %s, i: %d", running_thread->id,
+            running_thread->name, __atomic_fetch_add(&i, 1, __ATOMIC_SEQ_CST));
 
-  __asm__ __volatile__("sti");
+    k_debug("stuff 1.");
+    k_debug("stuff 2.");
+    k_debug("stuff 3.");
+    k_debug("stuff 4.");
+    k_debug("stuff 5.");
+    k_debug("stuff 6.");
+    k_debug("stuff 7.");
+  }
 
-  // unmask_irq(0);
-  // unmask_irq(4);
-
-  //__asm__ __volatile__("int $0xf1");
-
-  // thread_yield();
-  goto top;
+  k_debug("thread %d: %d", running_thread->id, i);
 }
 
-thread_t *make_inital_kernel_thread() {
+thread_t *thread_create(void (*entrypoint)(void), pagemap_t *pagemap,
+                        char *name) {
   thread_t *thread = kmalloc(sizeof(thread_t));
-
-  memset(thread, 0x00, sizeof(thread_t));
-
-  thread->stack_base = kmalloc(16);
-
-  thread->stack_bounds =
-      (void *)(((uintptr_t)thread->stack_base + 16) & ~0xFULL);
-
-  thread->id = new_id++;
-
-  thread->allotment = MAX_ALLOTMENT;
-
-  thread->priority = 0;
-
-  thread->status = STATUS_WAIT;
-
-  thread->times_ran = 0;
-
-  thread->kernel_thread = true;
-
-  thread->stack_ptr = (uintptr_t)thread->stack_bounds;
-
-  return thread;
-}
-
-thread_t *thread_create(void (*entrypoint)(void), pagemap_t *pagemap) {
-  thread_t *thread = kmalloc(sizeof(thread_t));
-
-  thread_count++;
 
   if (thread_count > INITIAL_THREAD_BUFFER) {
     k_todo("Make threads array expandable.");
@@ -198,12 +179,14 @@ thread_t *thread_create(void (*entrypoint)(void), pagemap_t *pagemap) {
 
   thread->kernel_thread = pagemap == kernel_pagemap;
 
+  thread->name = name;
+
   uintptr_t *stack = (uintptr_t *)thread->stack_bounds;
 
   *--stack = 0; // padding
   *--stack = (uintptr_t)thread_await_death;
   *--stack = (uintptr_t)entrypoint;
-  *--stack = 0;
+  *--stack = 0; // popfq
 
   *--stack = 0; // rbx
   *--stack = 0; // rbp
@@ -217,29 +200,37 @@ thread_t *thread_create(void (*entrypoint)(void), pagemap_t *pagemap) {
   return thread;
 }
 
-void preempt() {
-  __asm__ __volatile__("cli");
-  serial_printf_("preempt\n");
+void start_thread(void (*entrypoint)(void), pagemap_t *pagemap, char name[16],
+                  uint8_t flags) {
+  spinlock_acquire(&threads_lock);
 
-  if (!thread_count) {
-    k_err("Asked to preempt with no threads!");
-    return;
+  if (flags != FLAGS_NONE && flags != 0) {
+    k_todo("Thread Flags");
   }
 
+  thread_t *t = thread_create(entrypoint, pagemap, name);
+
+  threads[thread_count++] = t;
+  spinlock_release(&threads_lock);
+
+  reorder_threads_list();
+}
+
+void preempt() {
   spinlock_acquire(&scheduler_lock);
 
-  serial_printf_("0\n");
+  if (!thread_count) {
+    // Asked to preempt with no threads! just wait
+    apic_interrupt_ms(500);
+    return;
+  }
 
   if (running_thread != NULL) {
     last_running_thread = running_thread;
   }
 
-  serial_printf_("1\n");
-
   uint32_t queue_number = threads[0]->priority;
   uint32_t queue_end_index = 0;
-
-  serial_printf_("2\n");
 
   bool s = times_preempted++ % S_QUANTUM == 0;
 
@@ -256,8 +247,6 @@ void preempt() {
     }
   }
 
-  serial_printf_("a\n");
-
   if (in_queue_thread_index >= queue_end_index) {
     in_queue_thread_index = 0;
   }
@@ -268,10 +257,10 @@ void preempt() {
     running_thread->priority++;
     if (running_thread->priority > NUM_QUEUES) {
       running_thread->priority = NUM_QUEUES;
+    } else {
+      running_thread->allotment = MAX_ALLOTMENT;
+      reorder_threads_list();
     }
-
-    running_thread->allotment = MAX_ALLOTMENT;
-    reorder_threads_list();
   } else {
     running_thread->allotment--;
   }
@@ -280,28 +269,29 @@ void preempt() {
 
   switch_tss_stack((uintptr_t)running_thread->stack_bounds);
 
-  serial_printf_("b\n");
-
   running_thread->times_ran++;
 
-  k_debug("Runing thread %d (pri: %d, allot: %d)", running_thread->id,
-          running_thread->priority, running_thread->allotment);
-
-  spinlock_release(&scheduler_lock);
-
-  serial_printf_("try switch\n");
+  k_debug("Runing thread %d ----------- (pri: %d, allot: %d)",
+          running_thread->id, running_thread->priority,
+          running_thread->allotment);
 
   apic_interrupt_ms(BASE_PREEMPT_QUANTUM_MS * (running_thread->priority + 1));
 
-  uint64_t *old_rsp = &last_running_thread->stack_ptr;
   uint64_t new_rsp = running_thread->stack_ptr;
+  uint64_t *old_rsp;
+
+  if (last_running_thread) {
+    old_rsp = &last_running_thread->stack_ptr;
+  } else {
+    old_rsp = &new_rsp;
+  }
 
   if (!new_rsp) {
     k_err("Bad stack ptr");
     return;
   }
 
-  __asm__ __volatile__("sti");
+  spinlock_release(&scheduler_lock);
 
   task_switch(old_rsp, new_rsp);
 }
@@ -309,26 +299,13 @@ void preempt() {
 void setup_scheduler() {
   threads = kmalloc(sizeof(thread_t *) * INITIAL_THREAD_BUFFER);
 
-  last_running_thread = make_inital_kernel_thread();
-
   for (uint8_t i = 0; i < 15; i++) {
-    thread_t *t = thread_create(thread_debug, kernel_pagemap);
-    t->priority = 0;
-    threads[i] = t;
+    start_thread(thread_debug, kernel_pagemap, "Debug thread", FLAGS_NONE);
   }
-
-  k_debug("thread count: %d", thread_count);
-
-  reorder_threads_list();
-
-  // apic_interrupt_ms(
-  //   BASE_PREEMPT_QUANTUM_MS /* * (running_thread->priority + 1)*/);
-
-  apic_interrupt_ms(1000);
 
   // preempt();
 
-  // dump_threads();
+  apic_interrupt_ms(1000);
 }
 
 void signal_thread(thread_id_t id, signal_t signal) {}

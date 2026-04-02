@@ -161,7 +161,7 @@ int64_t get_boot_time(void) {
   return bootime_request.response->timestamp;
 }
 
-static char *version_string = "0.0.5";
+static char *version_string = "0.0.6";
 
 void print_banner(void) {
   set_text_colour(0xe6a6a1);
@@ -198,6 +198,8 @@ void print_banner(void) {
 
   print_free_ram();
 }
+
+void debug() { k_debug("Debug kernel core thread/./"); }
 
 // Main boot entrypoint.
 void kmain(void) {
@@ -343,15 +345,13 @@ void kmain(void) {
 
   k_ok("Started Scheduler");
 
-  // apic_interrupt_ms(1000);
+  crlf();
 
-  k_log("At end of implemented features, hanging.");
+  printf_("Awaiting Scheduler Startup...");
 
   crlf();
 
-  printf_("Press 'Enter' in serial terminal to start kernel debug shell...");
-
-  crlf();
+  // start_thread(debug, NULL, "Kernel thread.", FLAGS_NONE);
 
   hcf();
 }
