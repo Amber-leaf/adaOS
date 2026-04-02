@@ -14,12 +14,38 @@
 #define SIGKILL 0;
 #define SIGSTOP 1;
 
-#define STATUS_WAIT 0
-#define STATUS_DEAD 1
-#define STATUS_RUNNING 2
-#define STATUS_WAIT_ON_EXIT 3
+#define STATUS_READY 0
+#define STATUS_RUNNING 1
+#define STATUS_ASLEEP 2
 
 #define FLAGS_NONE 1 << 0
+
+#define NO_ARGS (args_t){0}
+
+#define CAST64(x) (uint64_t)(x)
+
+#define ARGS_0()                                                               \
+  CAST64(0), CAST64(0), CAST64(0), CAST64(0), CAST64(0), CAST64(0)
+#define ARGS_1(a)                                                              \
+  CAST64(a), CAST64(0), CAST64(0), CAST64(0), CAST64(0), CAST64(0)
+#define ARGS_2(a, b)                                                           \
+  CAST64(a), CAST64(b), CAST64(0), CAST64(0), CAST64(0), CAST64(0)
+#define ARGS_3(a, b, c)                                                        \
+  CAST64(a), CAST64(b), CAST64(c), CAST64(0), CAST64(0), CAST64(0)
+#define ARGS_4(a, b, c, d)                                                     \
+  CAST64(a), CAST64(b), CAST64(c), CAST64(d), CAST64(0), CAST64(0)
+#define ARGS_5(a, b, c, d, e)                                                  \
+  CAST64(a), CAST64(b), CAST64(c), CAST64(d), CAST64(e), CAST64(0)
+#define ARGS_6(a, b, c, d, e, f)                                               \
+  CAST64(a), CAST64(b), CAST64(c), CAST64(d), CAST64(e), CAST64(f)
+
+#define ARGS_COUNT(_1, _2, _3, _4, _5, _6, N, ...) N
+#define ARGS_N(...) ARGS_COUNT(__VA_ARGS__, 6, 5, 4, 3, 2, 1, 0)
+
+#define ARGS_DISPATCH(N, ...) ARGS_##N(__VA_ARGS__)
+#define ARGS_DISPATCH2(N, ...) ARGS_DISPATCH(N, __VA_ARGS__)
+
+#define ARGS(...) ((args_t){ARGS_DISPATCH2(ARGS_N(__VA_ARGS__), __VA_ARGS__)})
 
 typedef bool spinlock_t;
 typedef uint32_t thread_id_t;
@@ -43,13 +69,23 @@ typedef struct thread {
 
   uint64_t times_ran;
 
-  char* name;
+  char *name;
 } thread_t;
 
+typedef struct args {
+  uint64_t arg1, arg2, arg3, arg4, arg5, arg6;
+} args_t;
+
 void setup_scheduler();
+
 void preempt();
-void start_thread(void (*entrypoint)(void), pagemap_t *pagemap, char name[16],
-                  uint8_t flags);
+
+void thread_start(void *(*entrypoint)(void *), pagemap_t *pagemap,
+                  char name[16], uint8_t flags, args_t args);
+
+void thread_yield();
+
+thread_t *thread_self();
 
 static inline bool spinlock_try(spinlock_t *lock) {
   return __sync_bool_compare_and_swap(lock, false, true);
@@ -58,7 +94,7 @@ static inline bool spinlock_try(spinlock_t *lock) {
 static inline void spinlock_acquire(spinlock_t *lock) {
   while (!__sync_bool_compare_and_swap(lock, false, true)) {
     while (*lock) {
-      serial_printf("Spining");
+      serial_printf("Spining\n");
       asm volatile("pause" : : : "memory");
     }
   }
@@ -68,7 +104,8 @@ static inline void spinlock_acquire(spinlock_t *lock) {
 
 static inline void spinlock_release(spinlock_t *lock) {
   __atomic_store_n(lock, 0, __ATOMIC_RELEASE);
-    __asm__ __volatile__("sti");
+
+  __asm__ __volatile__("sti");
 }
 
 #endif

@@ -4,11 +4,8 @@
 #include "../memory/header/memmap.h"
 #include "../platform/x86_64/header/apic.h"
 #include "../platform/x86_64/header/gdt.h"
-#include "../platform/x86_64/header/pic.h"
-#include "../platform/x86_64/header/pit.h"
 
 #include "../util/header/log.h"
-#include "../util/header/print_lowlevel.h"
 #include "../util/header/printf.h"
 
 #include <stdbool.h>
@@ -34,11 +31,14 @@ thread_id_t new_id = 0;
 extern pagemap_t *kernel_pagemap;
 
 thread_t **threads;
+thread_t **sleeping_threads;
+
 uint32_t thread_count;
 thread_t *running_thread;
 thread_t *last_running_thread;
 
 extern void task_switch(uintptr_t *old_sp, uintptr_t new_sp);
+extern void thread_init_trampoline();
 
 uint32_t times_preempted = 0;
 
@@ -49,9 +49,11 @@ void dump_threads() {
   for (uint8_t i = 0; i < thread_count; i++) {
     thread_t *thread = threads[i];
     k_debug("[thread %d]:", thread->id);
+    k_debug("- name: %s", thread->name);
     k_debug("- priority: %d", thread->priority);
     k_debug("- allotment: %d", thread->allotment);
     k_debug("- times ran: %d", thread->times_ran);
+    k_debug("- status: %d", thread->status);
   }
   spinlock_release(&threads_lock);
 }
@@ -72,7 +74,14 @@ void reorder_threads_list() {
   spinlock_release(&threads_lock);
 }
 
-void thread_destroy(thread_t *thread) {
+thread_t *thread_self() {
+  spinlock_acquire(&threads_lock);
+  thread_t *t = running_thread;
+  spinlock_release(&threads_lock);
+  return t;
+}
+
+void pop_thread(thread_t *thread) {
   spinlock_acquire(&threads_lock);
 
   // TODO: Shrink array if possible once done.
@@ -90,19 +99,25 @@ void thread_destroy(thread_t *thread) {
 
       reorder_threads_list();
 
-      spinlock_acquire(&threads_lock);
-
-      kfree(thread->stack_base);
-      kfree(thread);
-      spinlock_release(&threads_lock);
-      in_queue_thread_index = 0;
-
       return;
     }
   }
 
   k_err("Could not kill thread %d! Could not match IDs with a running thread!",
         thread->id);
+
+  in_queue_thread_index = 0;
+
+  spinlock_release(&threads_lock);
+}
+
+void thread_destroy(thread_t *thread) {
+  pop_thread(thread);
+
+  spinlock_acquire(&threads_lock);
+
+  kfree(thread->stack_base);
+  kfree(thread);
   in_queue_thread_index = 0;
 
   spinlock_release(&threads_lock);
@@ -122,34 +137,19 @@ void thread_yield() {
   preempt();
 }
 
-void thread_debug() {
-  uint32_t i = (uint32_t)(uintptr_t)kmalloc(sizeof(uint32_t));
-  i = 0;
-
-  while (i < 1000000) {
-    i++;
-    k_debug("extra work..................");
-    k_debug("yo im thread %d, named %s, i: %d", running_thread->id,
-            running_thread->name, __atomic_fetch_add(&i, 1, __ATOMIC_SEQ_CST));
-
-    k_debug("stuff 1.");
-    k_debug("stuff 2.");
-    k_debug("stuff 3.");
-    k_debug("stuff 4.");
-    k_debug("stuff 5.");
-    k_debug("stuff 6.");
-    k_debug("stuff 7.");
-  }
-
-  k_debug("thread %d: %d", running_thread->id, i);
+void thread_debug(char *c) {
+  k_debug("Thread %s (%d): ", running_thread->name, running_thread->id);
+  k_debug("- Status: %d", running_thread->status);
+  k_debug("- args: %s", c);
 }
 
-thread_t *thread_create(void (*entrypoint)(void), pagemap_t *pagemap,
-                        char *name) {
+thread_t *thread_allocate(void *(*entrypoint)(void *), pagemap_t *pagemap,
+                          char *name, args_t args) {
   thread_t *thread = kmalloc(sizeof(thread_t));
 
   if (thread_count > INITIAL_THREAD_BUFFER) {
     k_todo("Make threads array expandable.");
+    return NULL;
   }
 
   memset(thread, 0x00, sizeof(thread_t));
@@ -167,7 +167,7 @@ thread_t *thread_create(void (*entrypoint)(void), pagemap_t *pagemap,
 
   thread->priority = 0;
 
-  thread->status = STATUS_WAIT;
+  thread->status = STATUS_READY;
 
   thread->times_ran = 0;
 
@@ -186,31 +186,34 @@ thread_t *thread_create(void (*entrypoint)(void), pagemap_t *pagemap,
   *--stack = 0; // padding
   *--stack = (uintptr_t)thread_await_death;
   *--stack = (uintptr_t)entrypoint;
-  *--stack = 0; // popfq
+  *--stack = (uintptr_t)thread_init_trampoline;
 
-  *--stack = 0; // rbx
-  *--stack = 0; // rbp
-  *--stack = 0; // r12
-  *--stack = 0; // r13
-  *--stack = 0; // r14
-  *--stack = 0; // r15
+  *--stack = args.arg1; // rbx
+  *--stack = args.arg2; // rbp
+  *--stack = args.arg3; // r12
+  *--stack = args.arg4; // r13
+  *--stack = args.arg5; // r14
+  *--stack = args.arg6; // r15
 
   thread->stack_ptr = (uintptr_t)stack;
 
   return thread;
 }
 
-void start_thread(void (*entrypoint)(void), pagemap_t *pagemap, char name[16],
-                  uint8_t flags) {
+void thread_start(void *(*entrypoint)(void *), pagemap_t *pagemap,
+                  char name[16], uint8_t flags, args_t args) {
   spinlock_acquire(&threads_lock);
 
   if (flags != FLAGS_NONE && flags != 0) {
     k_todo("Thread Flags");
   }
 
-  thread_t *t = thread_create(entrypoint, pagemap, name);
+  thread_t *t = thread_allocate(entrypoint, pagemap, name, args);
+
+  t->status = STATUS_READY;
 
   threads[thread_count++] = t;
+
   spinlock_release(&threads_lock);
 
   reorder_threads_list();
@@ -220,8 +223,9 @@ void preempt() {
   spinlock_acquire(&scheduler_lock);
 
   if (!thread_count) {
-    // Asked to preempt with no threads! just wait
+    // Asked to preempt with no threads! just wait a bit and hope for some work.
     apic_interrupt_ms(500);
+    spinlock_release(&scheduler_lock);
     return;
   }
 
@@ -271,9 +275,7 @@ void preempt() {
 
   running_thread->times_ran++;
 
-  k_debug("Runing thread %d ----------- (pri: %d, allot: %d)",
-          running_thread->id, running_thread->priority,
-          running_thread->allotment);
+  running_thread->status = STATUS_RUNNING;
 
   apic_interrupt_ms(BASE_PREEMPT_QUANTUM_MS * (running_thread->priority + 1));
 
@@ -281,6 +283,7 @@ void preempt() {
   uint64_t *old_rsp;
 
   if (last_running_thread) {
+    last_running_thread->status = STATUS_READY;
     old_rsp = &last_running_thread->stack_ptr;
   } else {
     old_rsp = &new_rsp;
@@ -288,6 +291,7 @@ void preempt() {
 
   if (!new_rsp) {
     k_err("Bad stack ptr");
+    spinlock_release(&scheduler_lock);
     return;
   }
 
@@ -300,12 +304,9 @@ void setup_scheduler() {
   threads = kmalloc(sizeof(thread_t *) * INITIAL_THREAD_BUFFER);
 
   for (uint8_t i = 0; i < 15; i++) {
-    start_thread(thread_debug, kernel_pagemap, "Debug thread", FLAGS_NONE);
+    thread_start((void *)thread_debug, kernel_pagemap, "Debug thread",
+                 FLAGS_NONE, ARGS("hello from args!"));
   }
 
-  // preempt();
-
-  apic_interrupt_ms(1000);
+  apic_interrupt_ms(BASE_PREEMPT_QUANTUM_MS * 4);
 }
-
-void signal_thread(thread_id_t id, signal_t signal) {}

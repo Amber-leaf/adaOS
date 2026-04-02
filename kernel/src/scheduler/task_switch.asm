@@ -1,9 +1,19 @@
 section .text
 
 global task_switch
-task_switch:
+global thread_init_trampoline
 
-    pushfq
+thread_init_trampoline:
+    mov rdi, rbx
+    mov rsi, rbp
+    mov rdx, r12
+    mov rcx, r13
+    mov r8,  r14
+    mov r9,  r15
+    ret
+
+
+task_switch:
     push rbx
     push rbp
     push r12
@@ -20,8 +30,7 @@ task_switch:
     pop r12
     pop rbp
     pop rbx
-    popfq
-
+    
     sti
 
     ret

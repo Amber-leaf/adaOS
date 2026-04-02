@@ -3,6 +3,7 @@
 #include "../header/core.h"
 #include "../platform/x86_64/header/apic.h"
 #include "../platform/x86_64/header/port.h"
+#include "../scheduler/header/scheduler.h"
 #include "../util/header/log.h"
 #include "../util/header/panic.h"
 #include "../util/header/printf.h"
@@ -12,6 +13,8 @@
 #include "header/rs232_handler.h"
 
 extern bool interrupt_as_timer;
+
+SPINLOCK_DEFINE(interup_lock);
 
 void print_cpu_status_interrupt(struct interrupt_cpu_status *context) {
   printf_("Vector: %llu  Error Code: %016llx\n---\n", context->vector_number,
@@ -46,6 +49,8 @@ void unimplemented_abort(char *msg, struct interrupt_cpu_status *context) {
 }
 
 void exception_handler(struct interrupt_cpu_status *context) {
+  __asm__ __volatile__("cli");
+
   if (context->vector_number > 0xf0) {
     send_eio();
   } else {
@@ -179,4 +184,6 @@ void exception_handler(struct interrupt_cpu_status *context) {
     print_cpu_status_interrupt(context);
     break;
   }
+
+  __asm__ __volatile__("sti");
 }
