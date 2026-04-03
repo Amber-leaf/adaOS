@@ -6,6 +6,7 @@
 #include "../../memory/physical/header/pmm.h"
 #include "../../memory/virtual/header/vmm.h"
 #include "../../platform/x86_64/header/apic.h"
+#include "../../scheduler/header/scheduler.h"
 #include "../../util/header/log.h"
 #include "../../util/header/panic.h"
 #include "../../util/header/printf.h"
@@ -17,6 +18,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+SPINLOCK_DEFINE(cpu_lock);
+
 cpu_t **smp_cpus;
 
 size_t cpus_awake = 1;
@@ -26,9 +29,9 @@ __attribute__((
     used, section(".limine_requests"))) static volatile struct limine_mp_request
     mp_request = {.id = LIMINE_MP_REQUEST, .revision = 0};
 
-cpu_t inline *get_cpu(void) { return (cpu_t *)read_msr(MSR_GSBASE); }
+inline cpu_t *get_cpu(void) { return (cpu_t *)read_msr(MSR_GSBASE); }
 
-void inline set_cpu(cpu_t *ptr) { write_msr(MSR_GSBASE, (uint64_t)ptr); }
+inline void set_cpu(cpu_t *ptr) { write_msr(MSR_GSBASE, (uint64_t)ptr); }
 
 struct limine_mp_response *get_mp_info() {
   struct limine_mp_response *mp = mp_request.response;
@@ -54,6 +57,9 @@ struct limine_mp_response *get_mp_info() {
 }
 
 void awake(struct limine_mp_info *info) {
+
+  spinlock_acquire(&cpu_lock);
+
   set_cpu((cpu_t *)info->extra_argument); // We stashed the cpu context in the
                                           // extra argument the Limine gives us.
   get_cpu()->lapic_base = read_msr(MSR_IA32_APIC_BASE);
@@ -68,6 +74,8 @@ void awake(struct limine_mp_info *info) {
   k_debug("Setup CPU %d", get_cpu()->id);
 
   __atomic_fetch_add(&cpus_awake, 1, __ATOMIC_SEQ_CST);
+
+  spinlock_release(&cpu_lock);
 
   hcf();
 }

@@ -199,7 +199,7 @@ void print_banner(void) {
   print_free_ram();
 }
 
-void debug() { k_debug("Debug kernel core thread."); }
+void debug() { k_debug("ehllo from kernle core"); }
 
 // Main boot entrypoint.
 void kmain(void) {
@@ -347,7 +347,7 @@ void kmain(void) {
 
   crlf();
 
-  thread_start((void *)debug, NULL, "Kernel thread.", FLAGS_NONE, NO_ARGS);
+  thread_start((void *)debug, NULL, "Kernel thread", FLAGS_NONE, NO_ARGS);
 
   hcf();
 }

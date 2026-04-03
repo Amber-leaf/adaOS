@@ -56,19 +56,19 @@ int atoi_(const char *strg) {
  * Adapted from http://howardhinnant.github.io/date_algorithms.html.
  */
 void ms_to_iso8601(uint64_t ms_epoch, char *buf, size_t buf_size) {
-  uint32_t ms = (uint32_t)(ms_epoch % 1000);
-  uint64_t secs = ms_epoch / 1000;
+  int32_t ms = (int32_t)(ms_epoch % 1000);
+  int64_t secs = ms_epoch / 1000;
 
   /* Clock time */
-  uint32_t sec = (uint32_t)(secs % 60);
+  int32_t sec = (int32_t)(secs % 60);
   secs /= 60;
-  uint32_t min = (uint32_t)(secs % 60);
+  int32_t min = (int32_t)(secs % 60);
   secs /= 60;
-  uint32_t hr = (uint32_t)(secs % 24);
+  int32_t hr = (int32_t)(secs % 24);
   secs /= 24;
 
   /* secs is now days since 1970-01-01 */
-  uint64_t days = secs;
+  int64_t days = secs;
 
   /*
    * Civil date from days since epoch.

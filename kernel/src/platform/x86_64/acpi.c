@@ -149,7 +149,7 @@ void parse_madt(sdt_header_t *madt_sdt_header) {
 
   size_t i = 0; // TODO: this should really be a per-type index, but the ACPI
                 // speck mandates that they go in order so its probably fine...
-  uint8_t last_type;
+  uint8_t last_type = 0;
 
   for (size_t offset = MADT_RECORD_OFFSET; offset < madt_sdt_header->length;) {
     struct madt_record_header header =

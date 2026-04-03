@@ -14,8 +14,6 @@
 
 extern bool interrupt_as_timer;
 
-SPINLOCK_DEFINE(interup_lock);
-
 void print_cpu_status_interrupt(struct interrupt_cpu_status *context) {
   printf_("Vector: %llu  Error Code: %016llx\n---\n", context->vector_number,
           context->error_code);

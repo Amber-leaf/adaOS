@@ -303,10 +303,5 @@ void preempt() {
 void setup_scheduler() {
   threads = kmalloc(sizeof(thread_t *) * INITIAL_THREAD_BUFFER);
 
-  for (uint8_t i = 0; i < 15; i++) {
-    thread_start((void *)thread_debug, kernel_pagemap, "Debug thread",
-                 FLAGS_NONE, ARGS("hello from args!"));
-  }
-
   apic_interrupt_ms(BASE_PREEMPT_QUANTUM_MS * 4);
 }
