@@ -23,6 +23,9 @@
 
 #define MAX_ALLOTMENT 2
 
+#define KERNEL_THREAD_MAX_PRIORITY 0
+#define USER_THREAD_MAX_PRIORITY 2
+
 SPINLOCK_DEFINE(scheduler_lock);
 SPINLOCK_DEFINE(threads_lock);
 
@@ -33,7 +36,9 @@ extern pagemap_t *kernel_pagemap;
 thread_t **threads;
 thread_t **sleeping_threads;
 
-uint32_t thread_count;
+uint32_t thread_count = 0;
+uint32_t sleeping_thread_count = 0;
+
 thread_t *running_thread;
 thread_t *last_running_thread;
 
@@ -45,6 +50,7 @@ uint32_t times_preempted = 0;
 uint32_t in_queue_thread_index = 0;
 
 void dump_threads() {
+  k_debug("dump threads");
   spinlock_acquire(&threads_lock);
   for (uint8_t i = 0; i < thread_count; i++) {
     thread_t *thread = threads[i];
@@ -59,6 +65,7 @@ void dump_threads() {
 }
 
 void reorder_threads_list() {
+  k_debug("reorder threads list");
   spinlock_acquire(&threads_lock);
   for (uint32_t i = 1; i < thread_count; i++) {
     struct thread *key = threads[i];
@@ -75,13 +82,17 @@ void reorder_threads_list() {
 }
 
 thread_t *thread_self() {
+  k_debug("thread self");
+
   spinlock_acquire(&threads_lock);
   thread_t *t = running_thread;
   spinlock_release(&threads_lock);
   return t;
 }
 
-void pop_thread(thread_t *thread) {
+static void pop_thread(thread_t *thread) {
+  k_debug("pop thread");
+
   spinlock_acquire(&threads_lock);
 
   // TODO: Shrink array if possible once done.
@@ -103,7 +114,7 @@ void pop_thread(thread_t *thread) {
     }
   }
 
-  k_err("Could not kill thread %d! Could not match IDs with a running thread!",
+  k_err("Could not pop thread %d! Could not match IDs with a running thread!",
         thread->id);
 
   in_queue_thread_index = 0;
@@ -112,6 +123,8 @@ void pop_thread(thread_t *thread) {
 }
 
 void thread_destroy(thread_t *thread) {
+  k_debug("thread destroy");
+
   pop_thread(thread);
 
   spinlock_acquire(&threads_lock);
@@ -133,18 +146,119 @@ void thread_await_death() {
 }
 
 void thread_yield() {
-  running_thread->allotment = MAX_ALLOTMENT;
+  k_debug("thread yield");
+
+  thread_self()->allotment = MAX_ALLOTMENT;
   preempt();
 }
 
-void thread_debug(char *c) {
-  k_debug("Thread %s (%d): ", running_thread->name, running_thread->id);
-  k_debug("- Status: %d", running_thread->status);
-  k_debug("- args: %s", c);
+void thread_sleep(thread_t *thread) {
+  k_debug("thread sleep");
+
+  if (thread == NULL) {
+    k_err("thread_sleep: NULL thread");
+    return;
+  }
+
+  spinlock_acquire(&threads_lock);
+
+  if (sleeping_thread_count >= INITIAL_THREAD_BUFFER) {
+    k_err("thread_sleep: sleeping thread buffer full");
+    spinlock_release(&threads_lock);
+    return;
+  }
+
+  bool found = false;
+  for (uint32_t i = 0; i < thread_count; i++) {
+    if (threads[i]->id == thread->id) {
+      for (uint32_t q = i; q < thread_count - 1; q++) {
+        threads[q] = threads[q + 1];
+      }
+      threads[--thread_count] = NULL;
+      found = true;
+      break;
+    }
+  }
+
+  if (!found) {
+    k_err("thread_sleep: thread %d not found in active queue", thread->id);
+    spinlock_release(&threads_lock);
+    return;
+  }
+
+  thread->status = STATUS_ASLEEP;
+  sleeping_threads[sleeping_thread_count++] = thread;
+
+  in_queue_thread_index = 0;
+
+  spinlock_release(&threads_lock);
+
+  if (thread == running_thread) {
+    preempt();
+  }
 }
 
-thread_t *thread_allocate(void *(*entrypoint)(void *), pagemap_t *pagemap,
-                          char *name, args_t args) {
+void thread_awake(thread_t *thread) {
+  k_debug("thread awake");
+
+  if (thread == NULL) {
+    k_err("thread_awake: NULL thread");
+    return;
+  }
+
+  spinlock_acquire(&threads_lock);
+
+  if (thread->status != STATUS_ASLEEP) {
+    k_err("thread_awake: thread %d is not sleeping (status %d)", thread->id,
+          thread->status);
+    spinlock_release(&threads_lock);
+    return;
+  }
+
+  if (thread_count >= INITIAL_THREAD_BUFFER) {
+    k_err("thread_awake: active thread buffer full");
+    spinlock_release(&threads_lock);
+    return;
+  }
+
+  bool found = false;
+  for (uint32_t i = 0; i < sleeping_thread_count; i++) {
+    if (sleeping_threads[i]->id == thread->id) {
+      for (uint32_t q = i; q < sleeping_thread_count - 1; q++) {
+        sleeping_threads[q] = sleeping_threads[q + 1];
+      }
+      sleeping_threads[--sleeping_thread_count] = NULL;
+      found = true;
+      break;
+    }
+  }
+
+  if (!found) {
+    k_err("thread_awake: thread %d not found in sleeping queue", thread->id);
+    spinlock_release(&threads_lock);
+    return;
+  }
+
+  thread->status = STATUS_READY;
+  thread->allotment = MAX_ALLOTMENT;
+  threads[thread_count++] = thread;
+
+  spinlock_release(&threads_lock);
+
+  reorder_threads_list();
+}
+
+void thread_debug(char *s) {
+  k_debug("Thread %s (%d): ", running_thread->name, running_thread->id);
+  k_debug("- Status: %d", running_thread->status);
+  k_debug("- Args: %s", s);
+}
+
+static thread_t *thread_allocate(void (*entrypoint)(void), pagemap_t *pagemap,
+                                 char *name, args_t args) {
+
+  k_debug("thread alloc");
+
   thread_t *thread = kmalloc(sizeof(thread_t));
 
   if (thread_count > INITIAL_THREAD_BUFFER) {
@@ -165,8 +279,6 @@ thread_t *thread_allocate(void *(*entrypoint)(void *), pagemap_t *pagemap,
 
   thread->allotment = MAX_ALLOTMENT;
 
-  thread->priority = 0;
-
   thread->status = STATUS_READY;
 
   thread->times_ran = 0;
@@ -178,6 +290,9 @@ thread_t *thread_allocate(void *(*entrypoint)(void *), pagemap_t *pagemap,
   }
 
   thread->kernel_thread = pagemap == kernel_pagemap;
+
+  thread->priority = (thread->kernel_thread ? KERNEL_THREAD_MAX_PRIORITY
+                                            : USER_THREAD_MAX_PRIORITY);
 
   thread->name = name;
 
@@ -200,8 +315,11 @@ thread_t *thread_allocate(void *(*entrypoint)(void *), pagemap_t *pagemap,
   return thread;
 }
 
-void thread_start(void *(*entrypoint)(void *), pagemap_t *pagemap,
-                  char name[16], uint8_t flags, args_t args) {
+thread_t *thread_start(void (*entrypoint)(void), pagemap_t *pagemap, char *name,
+                       uint8_t flags, args_t args) {
+
+  k_debug("thread start");
+
   spinlock_acquire(&threads_lock);
 
   if (flags != FLAGS_NONE && flags != 0) {
@@ -217,9 +335,13 @@ void thread_start(void *(*entrypoint)(void *), pagemap_t *pagemap,
   spinlock_release(&threads_lock);
 
   reorder_threads_list();
+
+  return t;
 }
 
 void preempt() {
+  k_debug("preempt");
+
   spinlock_acquire(&scheduler_lock);
 
   if (!thread_count) {
@@ -240,7 +362,9 @@ void preempt() {
 
   for (uint32_t i = 0; i < thread_count; i++) {
     if (s) {
-      threads[i]->priority = 0;
+      threads[i]->priority =
+          (threads[i]->kernel_thread ? KERNEL_THREAD_MAX_PRIORITY
+                                     : USER_THREAD_MAX_PRIORITY);
       threads[i]->allotment = MAX_ALLOTMENT;
     } else {
       if (threads[i]->priority == queue_number) {
@@ -302,6 +426,7 @@ void preempt() {
 
 void setup_scheduler() {
   threads = kmalloc(sizeof(thread_t *) * INITIAL_THREAD_BUFFER);
+  sleeping_threads = kmalloc(sizeof(thread_t *) * INITIAL_THREAD_BUFFER);
 
   apic_interrupt_ms(BASE_PREEMPT_QUANTUM_MS * 4);
 }

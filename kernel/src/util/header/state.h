@@ -34,7 +34,6 @@ struct global_state {
   uint8_t serial_interrupt_initialized;
   uint8_t smp_initialized;
 };
-
 struct global_state get_global_state();
 void set_state(size_t index, uint8_t value);
 

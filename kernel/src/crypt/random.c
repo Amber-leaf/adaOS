@@ -31,11 +31,6 @@ uint32_t random_uint32() {
   int k = state->state_index; // point to current state location
                               // 0 <= state_index <= n-1   always
 
-  //  int k = k - n;                   // point to state n iterations before
-  //  if (k < 0) k += n;               // modulo n circular indexing
-  // the previous 2 lines actually do nothing
-  //  for illustration only
-
   int j = k - (_n - 1); // point to state n-1 iterations before
   if (j < 0)
     j += _n; // modulo n circular indexing

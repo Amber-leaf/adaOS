@@ -117,11 +117,8 @@ void apic_sleep_ms(uint32_t ms) {
 void apic_interrupt_ms(uint32_t ms) {
   interrupt_as_timer = false;
   write_register(APIC_TIMER_INITIAL_COUNT, ticks_1ms * ms);
-  // write_register(APIC_TIMER_CURRENT_COUNT, ticks_1ms * ms);
-  // write_register(APIC_TIMER_DIVIDE_CONFIG, 0x3);
-  write_register(APIC_LVT_TIMER, 0xf1);
 
-  unmask_irq(0);
+  write_register(APIC_LVT_TIMER, 0xf1);
 }
 
 // FIXME: Not working

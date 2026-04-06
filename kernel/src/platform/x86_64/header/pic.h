@@ -4,5 +4,6 @@
 #include <stdint.h>
 void setup_pic();
 void unmask_irq(uint8_t irq);
+void mask_irq(uint8_t irq);
 
 #endif

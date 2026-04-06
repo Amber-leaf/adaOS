@@ -30,6 +30,24 @@ void unmask_irq(uint8_t irq) {
   outb(port, value);
 }
 
+void mask_irq(uint8_t irq) {
+  uint16_t port;
+  uint8_t value;
+
+  if (irq < 8) {
+    port = PIC1_DATA;
+  } else {
+    port = PIC2_DATA;
+    irq -= 8;
+  }
+
+  value = inb(port);
+
+  value |= (1 << irq);
+
+  outb(port, value);
+}
+
 void setup_pic() {
   __asm__ __volatile__("cli");
 

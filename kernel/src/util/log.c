@@ -1,10 +1,13 @@
 #include "../platform/x86_64/header/apic.h"
 #include "../platform/x86_64/header/cpu.h"
+#include "../platform/x86_64/header/pic.h"
 #include "../platform/x86_64/header/pit.h"
+
 #include "../scheduler/header/scheduler.h"
 #include "header/print_lowlevel.h"
 #include "header/printf.h"
 #include "header/state.h"
+#include <stdbool.h>
 #include <stdint.h>
 
 #define PLAIN_TEXT_COLOUR 0xb0b0b0
@@ -31,9 +34,8 @@
 SPINLOCK_DEFINE(log_lock);
 
 void k_debug(char *format, ...) {
+  // serial_printf("debug");
 #ifdef DBG
-  __asm__ __volatile__("cli");
-
   spinlock_acquire(&log_lock);
   va_list va;
   va_start(va, format);
@@ -45,14 +47,14 @@ void k_debug(char *format, ...) {
   }
 
   k_puts("[DBG] Kernel: ");
-  vprintf(format, va);
+  vprintf_(format, va);
   va_end(va);
   set_text_colour(PLAIN_TEXT_COLOUR);
   crlf();
 
   spinlock_release(&log_lock);
 
-  __asm__ __volatile__("sti");
+  // serial_printf("debug done");
 #endif
 }
 

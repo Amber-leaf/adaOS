@@ -7,8 +7,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define SPINLOCK_INIT_VALUE false
-
 #define SPINLOCK_DEFINE(name) static spinlock_t name = SPINLOCK_INIT_VALUE
 
 #define SIGKILL 0;
@@ -20,7 +18,7 @@
 
 #define FLAGS_NONE 1 << 0
 
-#define NO_ARGS (args_t){0}
+#define ARGS_NONE (args_t){0}
 
 #define CAST64(x) (uint64_t)(x)
 
@@ -47,9 +45,14 @@
 
 #define ARGS(...) ((args_t){ARGS_DISPATCH2(ARGS_N(__VA_ARGS__), __VA_ARGS__)})
 
-typedef bool spinlock_t;
 typedef uint32_t thread_id_t;
 typedef uint8_t signal_t;
+
+typedef struct spinlock {
+  bool locked;
+  uint64_t saved_flags;
+} spinlock_t;
+
 
 typedef struct thread {
   thread_id_t id;
@@ -80,32 +83,44 @@ void setup_scheduler();
 
 void preempt();
 
-void thread_start(void *(*entrypoint)(void *), pagemap_t *pagemap,
-                  char name[16], uint8_t flags, args_t args);
-
+thread_t* thread_start(void (*entrypoint)(void), pagemap_t *pagemap,
+                  char* name, uint8_t flags, args_t args);
 void thread_yield();
 
 thread_t *thread_self();
 
+void thread_sleep(thread_t* thread);
+
+void thread_awake(thread_t *thread);
+
+#define SPINLOCK_INIT_VALUE {false, 0}
+
 static inline bool spinlock_try(spinlock_t *lock) {
-  return __sync_bool_compare_and_swap(lock, false, true);
+  return __sync_bool_compare_and_swap(&lock->locked, false, true);
 }
 
 static inline void spinlock_acquire(spinlock_t *lock) {
-  while (!__sync_bool_compare_and_swap(lock, false, true)) {
-    while (*lock) {
-      //serial_printf("Spining\n");
+  uint64_t flags;
+  __asm__ __volatile__(
+    "pushfq\n\t"
+    "pop %0\n\t"
+    "cli"
+    : "=r"(flags) : : "memory"
+  );
+  while (!__sync_bool_compare_and_swap(&lock->locked, false, true)) {
+    while (lock->locked) {
       asm volatile("pause" : : : "memory");
     }
   }
-
-  __asm__ __volatile__("cli");
+  lock->saved_flags = flags;
 }
 
 static inline void spinlock_release(spinlock_t *lock) {
-  __atomic_store_n(lock, 0, __ATOMIC_RELEASE);
-
-  __asm__ __volatile__("sti");
+  uint64_t flags = lock->saved_flags;
+  __atomic_store_n(&lock->locked, false, __ATOMIC_RELEASE);
+  if (flags & (1 << 9)) {
+    __asm__ __volatile__("sti");
+  }
 }
 
 #endif
