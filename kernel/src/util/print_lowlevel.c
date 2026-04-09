@@ -5,6 +5,7 @@
 #include "../header/core.h"
 #include "../header/limine.h"
 #include "../scheduler/header/scheduler.h"
+#include "../scheduler/header/spinlock.h"
 
 #define MISSING font[0]
 

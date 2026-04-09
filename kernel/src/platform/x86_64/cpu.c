@@ -7,6 +7,7 @@
 #include "../../memory/virtual/header/vmm.h"
 #include "../../platform/x86_64/header/apic.h"
 #include "../../scheduler/header/scheduler.h"
+#include "../../scheduler/header/spinlock.h"
 #include "../../util/header/log.h"
 #include "../../util/header/panic.h"
 #include "../../util/header/printf.h"

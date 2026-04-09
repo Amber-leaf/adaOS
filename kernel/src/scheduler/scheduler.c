@@ -4,6 +4,7 @@
 #include "../memory/header/memmap.h"
 #include "../platform/x86_64/header/apic.h"
 #include "../platform/x86_64/header/gdt.h"
+#include "header/spinlock.h"
 
 #include "../util/header/log.h"
 #include "../util/header/printf.h"
@@ -42,7 +43,8 @@ uint32_t sleeping_thread_count = 0;
 thread_t *running_thread;
 thread_t *last_running_thread;
 
-extern void task_switch(uintptr_t *old_sp, uintptr_t new_sp);
+extern void task_switch(spinlock_t *spinlock, uintptr_t *old_sp,
+                        uintptr_t new_sp);
 extern void thread_init_trampoline();
 
 uint32_t times_preempted = 0;
@@ -64,9 +66,13 @@ void dump_threads() {
   spinlock_release(&threads_lock);
 }
 
+SPINLOCK_DEFINE(reorder_lock);
+
 void reorder_threads_list() {
+  __asm__ __volatile__("cli");
+  spinlock_acquire(&reorder_lock);
   k_debug("reorder threads list");
-  spinlock_acquire(&threads_lock);
+
   for (uint32_t i = 1; i < thread_count; i++) {
     struct thread *key = threads[i];
 
@@ -78,22 +84,25 @@ void reorder_threads_list() {
     }
     threads[j + 1] = key;
   }
-  spinlock_release(&threads_lock);
+  k_debug("reorder threads list done");
+
+  spinlock_release_no_sti(&reorder_lock);
 }
 
-thread_t *thread_self() {
-  k_debug("thread self");
+thread_t *thread_self(void) {
+  __asm__ __volatile__("cli");
 
   spinlock_acquire(&threads_lock);
+  k_debug("thread self");
+
   thread_t *t = running_thread;
-  spinlock_release(&threads_lock);
+  spinlock_release_no_sti(&threads_lock);
   return t;
 }
 
 static void pop_thread(thread_t *thread) {
-  k_debug("pop thread");
-
   spinlock_acquire(&threads_lock);
+  k_debug("pop thread");
 
   // TODO: Shrink array if possible once done.
   for (uint32_t i = 0; i < thread_count; i++) {
@@ -106,9 +115,9 @@ static void pop_thread(thread_t *thread) {
 
       threads[thread_count--] = NULL;
 
-      spinlock_release(&threads_lock);
-
       reorder_threads_list();
+
+      spinlock_release(&threads_lock);
 
       return;
     }
@@ -153,7 +162,6 @@ void thread_yield() {
 }
 
 void thread_sleep(thread_t *thread) {
-  k_debug("thread sleep");
 
   if (thread == NULL) {
     k_err("thread_sleep: NULL thread");
@@ -161,6 +169,7 @@ void thread_sleep(thread_t *thread) {
   }
 
   spinlock_acquire(&threads_lock);
+  k_debug("thread sleep");
 
   if (sleeping_thread_count >= INITIAL_THREAD_BUFFER) {
     k_err("thread_sleep: sleeping thread buffer full");
@@ -199,7 +208,6 @@ void thread_sleep(thread_t *thread) {
 }
 
 void thread_awake(thread_t *thread) {
-  k_debug("thread awake");
 
   if (thread == NULL) {
     k_err("thread_awake: NULL thread");
@@ -208,6 +216,7 @@ void thread_awake(thread_t *thread) {
 
   spinlock_acquire(&threads_lock);
 
+  k_debug("thread awake");
   if (thread->status != STATUS_ASLEEP) {
     k_err("thread_awake: thread %d is not sleeping (status %d)", thread->id,
           thread->status);
@@ -243,9 +252,9 @@ void thread_awake(thread_t *thread) {
   thread->allotment = MAX_ALLOTMENT;
   threads[thread_count++] = thread;
 
-  spinlock_release(&threads_lock);
-
   reorder_threads_list();
+
+  spinlock_release(&threads_lock);
 }
 
 void thread_debug(char *s) {
@@ -315,12 +324,12 @@ static thread_t *thread_allocate(void (*entrypoint)(void), pagemap_t *pagemap,
   return thread;
 }
 
+SPINLOCK_DEFINE(thread_start_lock);
+
 thread_t *thread_start(void (*entrypoint)(void), pagemap_t *pagemap, char *name,
                        uint8_t flags, args_t args) {
-
+  spinlock_acquire(&thread_start_lock);
   k_debug("thread start");
-
-  spinlock_acquire(&threads_lock);
 
   if (flags != FLAGS_NONE && flags != 0) {
     k_todo("Thread Flags");
@@ -332,17 +341,21 @@ thread_t *thread_start(void (*entrypoint)(void), pagemap_t *pagemap, char *name,
 
   threads[thread_count++] = t;
 
-  spinlock_release(&threads_lock);
-
   reorder_threads_list();
+
+  spinlock_release(&thread_start_lock);
 
   return t;
 }
 
 void preempt() {
-  k_debug("preempt");
+  __asm__ __volatile__("cli");
+
+  spinlock_release(&scheduler_lock);
 
   spinlock_acquire(&scheduler_lock);
+
+  k_debug("preempt");
 
   if (!thread_count) {
     // Asked to preempt with no threads! just wait a bit and hope for some work.
@@ -419,9 +432,10 @@ void preempt() {
     return;
   }
 
-  spinlock_release(&scheduler_lock);
+  k_debug("preempt done");
 
-  task_switch(old_rsp, new_rsp);
+  // fixme: stack gets fucked
+  task_switch(&scheduler_lock, old_rsp, new_rsp);
 }
 
 void setup_scheduler() {

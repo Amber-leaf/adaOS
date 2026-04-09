@@ -4,6 +4,8 @@
 #include "../platform/x86_64/header/pit.h"
 
 #include "../scheduler/header/scheduler.h"
+#include "../scheduler/header/spinlock.h"
+
 #include "header/print_lowlevel.h"
 #include "header/printf.h"
 #include "header/state.h"
@@ -34,27 +36,34 @@
 SPINLOCK_DEFINE(log_lock);
 
 void k_debug(char *format, ...) {
-  // serial_printf("debug");
 #ifdef DBG
   spinlock_acquire(&log_lock);
+  serial_printf("debug\n");
+
+  char buffer[256];
+
   va_list va;
   va_start(va, format);
 
-  set_text_colour(DBG_TEXT_COLOUR);
+  vsnprintf_(buffer, 256, format, va);
+  serial_printf_("%s\n", buffer);
 
-  if (get_global_state().smp_initialized) {
-    printf_("(CPU %d) ", (uint64_t)get_cpu()->id);
-  }
+  //
+  // set_text_colour(DBG_TEXT_COLOUR);
+  //
+  // if (get_global_state().smp_initialized) {
+  //  printf_("(CPU %d) ", (uint64_t)get_cpu()->id);
+  //}
+  //
+  // k_puts("[DBG] Kernel: ");
+  // vprintf_(format, va);
+  // va_end(va);
+  // set_text_colour(PLAIN_TEXT_COLOUR);
+  // crlf();
 
-  k_puts("[DBG] Kernel: ");
-  vprintf_(format, va);
-  va_end(va);
-  set_text_colour(PLAIN_TEXT_COLOUR);
-  crlf();
+  serial_printf("debug done\n");
 
   spinlock_release(&log_lock);
-
-  // serial_printf("debug done");
 #endif
 }
 

@@ -27,6 +27,7 @@
 #include "platform/x86_64/header/pit.h"
 #include "platform/x86_64/header/rtc.h"
 #include "scheduler/header/scheduler.h"
+#include "scheduler/header/spinlock.h"
 #include "util/header/log.h"
 #include "util/header/panic.h"
 #include "util/header/print_lowlevel.h"
@@ -201,14 +202,26 @@ void print_banner(void) {
 
 void test(void) {
   while (true) {
-    k_debug("hello");
+    thread_self();
+    k_debug("help me i hate threads");
   }
 }
+
+SPINLOCK_DEFINE(aa);
 
 void kmain_thread(void) {
   k_log("Starting main kernel thread.");
 
-  thread_start((void *)test, NULL, "test", FLAGS_NONE, ARGS_NONE);
+  // thread_start((void *)test, NULL, "test", FLAGS_NONE, ARGS_NONE);
+  //  thread_start((void *)test, NULL, "test", FLAGS_NONE, ARGS_NONE);
+
+  while (true) {
+    spinlock_acquire(&aa);
+
+    k_debug("running, %d", thread_self()->id);
+    spinlock_release_no_sti(&aa);
+    __asm__ __volatile__("sti");
+  }
 }
 
 // Main boot entrypoint.
@@ -319,6 +332,7 @@ void kmain(void) {
 
   k_ok("Bootstrap APIC Setup");
 
+#if 0
   uint64_t apic_old_time = get_apic_ticks();
   uint64_t pit_old_time = get_pit_ticks();
 
@@ -338,6 +352,7 @@ void kmain(void) {
     k_test_pass("APIC Sleep");
     set_state(APIC_INITIALIZED, 0xf0);
   }
+#endif
 
   bootstrap_acpi();
 
@@ -359,6 +374,6 @@ void kmain(void) {
 
   thread_start(kmain_thread, NULL, "Kernel main thread", FLAGS_NONE, ARGS_NONE);
 
-  while (true) {
-  }
+  while (true)
+    k_debug("spin");
 }

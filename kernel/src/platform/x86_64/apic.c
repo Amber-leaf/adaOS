@@ -76,7 +76,7 @@ void write_icr(icr_t isr, uint32_t apic_id) {
   k_debug("b");
 }
 
-void apic_start_timer() {
+void apic_bootstrap_timer() {
   write_register(APIC_TIMER_DIVIDE_CONFIG, 0x3);
   write_register(APIC_TIMER_INITIAL_COUNT, 0xFFFFFFFF);
 
@@ -87,7 +87,9 @@ void apic_start_timer() {
   ticks_1ms = (0xFFFFFFFF - read_apic_register(APIC_TIMER_CURRENT_COUNT)) / 600;
 
   k_debug("Estimated bus frequency: %dKhz", ticks_1ms);
+}
 
+void apic_start_timer() {
   write_register(APIC_LVT_TIMER, 0xf1 | 0x20000);
   write_register(APIC_TIMER_DIVIDE_CONFIG, 0x3);
   write_register(APIC_TIMER_INITIAL_COUNT, ticks_1ms);
@@ -98,6 +100,8 @@ void apic_start_timer() {
 }
 
 void apic_sleep_ms(uint32_t ms) {
+  return;
+
   interrupt_as_timer = true;
   uint64_t start_ms = get_apic_ticks();
   uint64_t end_ms = start_ms + ms;
@@ -116,6 +120,7 @@ void apic_sleep_ms(uint32_t ms) {
 
 void apic_interrupt_ms(uint32_t ms) {
   interrupt_as_timer = false;
+
   write_register(APIC_TIMER_INITIAL_COUNT, ticks_1ms * ms);
 
   write_register(APIC_LVT_TIMER, 0xf1);
@@ -158,7 +163,9 @@ void bootstrap_apic() {
 
   k_debug("apic id: 0x%x", read_apic_register(APIC_ID));
 
-  apic_start_timer();
+  apic_bootstrap_timer();
+
+  // apic_start_timer();
 
   write_lvt_entry(APIC_LVT_THERMAL, 0xf2);
   write_lvt_entry(APIC_LVT_ERROR, 0xf6);

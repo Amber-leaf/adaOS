@@ -3,6 +3,8 @@ section .text
 global task_switch
 global thread_init_trampoline
 
+extern spinlock_release_no_sti
+
 thread_init_trampoline:
     mov rdi, rbx
     mov rsi, rbp
@@ -14,6 +16,8 @@ thread_init_trampoline:
 
 
 task_switch:
+    cli
+
     push rbx
     push rbp
     push r12
@@ -21,8 +25,9 @@ task_switch:
     push r14
     push r15
 
-    mov [rdi], rsp
-    mov rsp, rsi
+    mov [rsi], rsp
+    mov rsp, rdx
+    call spinlock_release_no_sti
     
     pop r15
     pop r14
@@ -31,6 +36,4 @@ task_switch:
     pop rbp
     pop rbx
     
-    sti
-
     ret

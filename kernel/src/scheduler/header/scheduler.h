@@ -48,12 +48,6 @@
 typedef uint32_t thread_id_t;
 typedef uint8_t signal_t;
 
-typedef struct spinlock {
-  bool locked;
-  uint64_t saved_flags;
-} spinlock_t;
-
-
 typedef struct thread {
   thread_id_t id;
 
@@ -83,44 +77,14 @@ void setup_scheduler();
 
 void preempt();
 
-thread_t* thread_start(void (*entrypoint)(void), pagemap_t *pagemap,
-                  char* name, uint8_t flags, args_t args);
+thread_t *thread_start(void (*entrypoint)(void), pagemap_t *pagemap, char *name,
+                       uint8_t flags, args_t args);
 void thread_yield();
 
 thread_t *thread_self();
 
-void thread_sleep(thread_t* thread);
+void thread_sleep(thread_t *thread);
 
 void thread_awake(thread_t *thread);
-
-#define SPINLOCK_INIT_VALUE {false, 0}
-
-static inline bool spinlock_try(spinlock_t *lock) {
-  return __sync_bool_compare_and_swap(&lock->locked, false, true);
-}
-
-static inline void spinlock_acquire(spinlock_t *lock) {
-  uint64_t flags;
-  __asm__ __volatile__(
-    "pushfq\n\t"
-    "pop %0\n\t"
-    "cli"
-    : "=r"(flags) : : "memory"
-  );
-  while (!__sync_bool_compare_and_swap(&lock->locked, false, true)) {
-    while (lock->locked) {
-      asm volatile("pause" : : : "memory");
-    }
-  }
-  lock->saved_flags = flags;
-}
-
-static inline void spinlock_release(spinlock_t *lock) {
-  uint64_t flags = lock->saved_flags;
-  __atomic_store_n(&lock->locked, false, __ATOMIC_RELEASE);
-  if (flags & (1 << 9)) {
-    __asm__ __volatile__("sti");
-  }
-}
 
 #endif
