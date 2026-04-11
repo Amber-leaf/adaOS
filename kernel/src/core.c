@@ -202,8 +202,8 @@ void print_banner(void) {
 
 void test(void) {
   while (true) {
-    thread_self();
-    k_debug("help me i hate threads");
+    k_debug("help me i hate threads, im %d", thread_self()->id);
+    __asm__ __volatile__("sti");
   }
 }
 
@@ -212,8 +212,8 @@ SPINLOCK_DEFINE(aa);
 void kmain_thread(void) {
   k_log("Starting main kernel thread.");
 
-  // thread_start((void *)test, NULL, "test", FLAGS_NONE, ARGS_NONE);
-  //  thread_start((void *)test, NULL, "test", FLAGS_NONE, ARGS_NONE);
+  thread_start((void *)test, NULL, "test", FLAGS_NONE, ARGS_NONE);
+  thread_start((void *)test, NULL, "test", FLAGS_NONE, ARGS_NONE);
 
   while (true) {
     spinlock_acquire(&aa);

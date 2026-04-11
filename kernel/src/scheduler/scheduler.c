@@ -43,13 +43,13 @@ uint32_t sleeping_thread_count = 0;
 thread_t *running_thread;
 thread_t *last_running_thread;
 
+uint32_t in_queue_thread_index = 0; // TODO: CPU local
+
 extern void task_switch(spinlock_t *spinlock, uintptr_t *old_sp,
                         uintptr_t new_sp);
 extern void thread_init_trampoline();
 
 uint32_t times_preempted = 0;
-
-uint32_t in_queue_thread_index = 0;
 
 void dump_threads() {
   k_debug("dump threads");
@@ -101,7 +101,7 @@ thread_t *thread_self(void) {
 }
 
 static void pop_thread(thread_t *thread) {
-  spinlock_acquire(&threads_lock);
+  spinlock_acquire(&scheduler_lock);
   k_debug("pop thread");
 
   // TODO: Shrink array if possible once done.
@@ -117,7 +117,7 @@ static void pop_thread(thread_t *thread) {
 
       reorder_threads_list();
 
-      spinlock_release(&threads_lock);
+      spinlock_release(&scheduler_lock);
 
       return;
     }
@@ -136,13 +136,14 @@ void thread_destroy(thread_t *thread) {
 
   pop_thread(thread);
 
-  spinlock_acquire(&threads_lock);
+  spinlock_acquire(&scheduler_lock);
 
-  kfree(thread->stack_base);
-  kfree(thread);
+  // kfree(thread->stack_base);
+  // kfree(thread);
+  //  TODO: reaper or something similar
   in_queue_thread_index = 0;
 
-  spinlock_release(&threads_lock);
+  spinlock_release(&scheduler_lock);
 }
 
 void thread_await_death() {
@@ -162,18 +163,17 @@ void thread_yield() {
 }
 
 void thread_sleep(thread_t *thread) {
-
   if (thread == NULL) {
     k_err("thread_sleep: NULL thread");
     return;
   }
 
-  spinlock_acquire(&threads_lock);
+  spinlock_acquire(&scheduler_lock);
   k_debug("thread sleep");
 
   if (sleeping_thread_count >= INITIAL_THREAD_BUFFER) {
     k_err("thread_sleep: sleeping thread buffer full");
-    spinlock_release(&threads_lock);
+    spinlock_release(&scheduler_lock);
     return;
   }
 
@@ -191,7 +191,7 @@ void thread_sleep(thread_t *thread) {
 
   if (!found) {
     k_err("thread_sleep: thread %d not found in active queue", thread->id);
-    spinlock_release(&threads_lock);
+    spinlock_release(&scheduler_lock);
     return;
   }
 
@@ -200,7 +200,7 @@ void thread_sleep(thread_t *thread) {
 
   in_queue_thread_index = 0;
 
-  spinlock_release(&threads_lock);
+  spinlock_release(&scheduler_lock);
 
   if (thread == running_thread) {
     preempt();
@@ -208,7 +208,6 @@ void thread_sleep(thread_t *thread) {
 }
 
 void thread_awake(thread_t *thread) {
-
   if (thread == NULL) {
     k_err("thread_awake: NULL thread");
     return;
@@ -388,7 +387,7 @@ void preempt() {
     }
   }
 
-  if (in_queue_thread_index >= queue_end_index) {
+  if (in_queue_thread_index > queue_end_index) {
     in_queue_thread_index = 0;
   }
 
@@ -419,7 +418,7 @@ void preempt() {
   uint64_t new_rsp = running_thread->stack_ptr;
   uint64_t *old_rsp;
 
-  if (last_running_thread) {
+  if (last_running_thread && last_running_thread != running_thread) {
     last_running_thread->status = STATUS_READY;
     old_rsp = &last_running_thread->stack_ptr;
   } else {
@@ -434,7 +433,6 @@ void preempt() {
 
   k_debug("preempt done");
 
-  // fixme: stack gets fucked
   task_switch(&scheduler_lock, old_rsp, new_rsp);
 }
 

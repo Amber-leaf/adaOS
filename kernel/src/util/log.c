@@ -40,26 +40,29 @@ void k_debug(char *format, ...) {
   spinlock_acquire(&log_lock);
   serial_printf("debug\n");
 
-  char buffer[256];
-
   va_list va;
   va_start(va, format);
 
+#if 0
+  char buffer[256];
+
   vsnprintf_(buffer, 256, format, va);
   serial_printf_("%s\n", buffer);
+#endif
 
-  //
-  // set_text_colour(DBG_TEXT_COLOUR);
-  //
-  // if (get_global_state().smp_initialized) {
-  //  printf_("(CPU %d) ", (uint64_t)get_cpu()->id);
-  //}
-  //
-  // k_puts("[DBG] Kernel: ");
-  // vprintf_(format, va);
-  // va_end(va);
-  // set_text_colour(PLAIN_TEXT_COLOUR);
-  // crlf();
+#if 1
+  set_text_colour(DBG_TEXT_COLOUR);
+
+  if (get_global_state().smp_initialized) {
+    printf_("(CPU %d) ", (uint64_t)get_cpu()->id);
+  }
+
+  k_puts("[DBG] Kernel: ");
+  vprintf_(format, va);
+  va_end(va);
+  set_text_colour(PLAIN_TEXT_COLOUR);
+  crlf();
+#endif
 
   serial_printf("debug done\n");
 
