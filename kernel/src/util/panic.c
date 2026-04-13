@@ -14,6 +14,8 @@ uint8_t panics = 0;
 
 void __attribute__((noreturn))
 panic(char *msg) { // TODO: add proper cleanup and tracing.
+  __asm__ __volatile__("cli");
+
   if (panics > 0) {
     k_err("Something is super fucky, panic panicked %d time(s). yay osdev >:3",
           panics);

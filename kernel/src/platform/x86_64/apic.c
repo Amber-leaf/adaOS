@@ -100,8 +100,6 @@ void apic_start_timer() {
 }
 
 void apic_sleep_ms(uint32_t ms) {
-  return;
-
   interrupt_as_timer = true;
   uint64_t start_ms = get_apic_ticks();
   uint64_t end_ms = start_ms + ms;
@@ -113,7 +111,6 @@ void apic_sleep_ms(uint32_t ms) {
       start_ms = current_ms;
       end_ms = start_ms + ms;
     }
-
     asm volatile("pause");
   }
 }
@@ -165,7 +162,7 @@ void bootstrap_apic() {
 
   apic_bootstrap_timer();
 
-  // apic_start_timer();
+  apic_start_timer();
 
   write_lvt_entry(APIC_LVT_THERMAL, 0xf2);
   write_lvt_entry(APIC_LVT_ERROR, 0xf6);

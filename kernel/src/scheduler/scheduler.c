@@ -7,6 +7,7 @@
 #include "header/spinlock.h"
 
 #include "../util/header/log.h"
+#include "../util/header/panic.h"
 #include "../util/header/printf.h"
 
 #include <stdbool.h>
@@ -14,7 +15,7 @@
 
 #define THREAD_STACK_SIZE (PAGE_SIZE * 20)
 
-#define S_QUANTUM 0x200
+#define S_QUANTUM 0x150
 
 #define BASE_PREEMPT_QUANTUM_MS 10
 
@@ -29,6 +30,7 @@
 
 SPINLOCK_DEFINE(scheduler_lock);
 SPINLOCK_DEFINE(threads_lock);
+SPINLOCK_DEFINE(thread_start_lock);
 
 thread_id_t new_id = 0;
 
@@ -52,7 +54,6 @@ extern void thread_init_trampoline();
 uint32_t times_preempted = 0;
 
 void dump_threads() {
-  k_debug("dump threads");
   spinlock_acquire(&threads_lock);
   for (uint8_t i = 0; i < thread_count; i++) {
     thread_t *thread = threads[i];
@@ -70,7 +71,6 @@ SPINLOCK_DEFINE(reorder_lock);
 
 void reorder_threads_list() {
   spinlock_acquire(&reorder_lock);
-  k_debug("reorder threads list");
 
   for (uint32_t i = 1; i < thread_count; i++) {
     struct thread *key = threads[i];
@@ -83,7 +83,6 @@ void reorder_threads_list() {
     }
     threads[j + 1] = key;
   }
-  k_debug("reorder threads list done");
 
   spinlock_release(&reorder_lock);
 }
@@ -97,7 +96,6 @@ thread_t *thread_self(void) {
 
 static void pop_thread(thread_t *thread) {
   spinlock_acquire(&scheduler_lock);
-  k_debug("pop thread");
 
   // TODO: Shrink array if possible once done.
   for (uint32_t i = 0; i < thread_count; i++) {
@@ -127,8 +125,6 @@ static void pop_thread(thread_t *thread) {
 }
 
 void thread_destroy(thread_t *thread) {
-  k_debug("thread destroy");
-
   pop_thread(thread);
 
   spinlock_acquire(&scheduler_lock);
@@ -151,8 +147,6 @@ void thread_await_death() {
 }
 
 void thread_yield() {
-  k_debug("thread yield");
-
   thread_self()->allotment = MAX_ALLOTMENT;
   preempt();
 }
@@ -210,7 +204,6 @@ void thread_awake(thread_t *thread) {
 
   spinlock_acquire(&threads_lock);
 
-  k_debug("thread awake");
   if (thread->status != STATUS_ASLEEP) {
     k_err("thread_awake: thread %d is not sleeping (status %d)", thread->id,
           thread->status);
@@ -259,9 +252,6 @@ void thread_debug(char *s) {
 
 static thread_t *thread_allocate(void (*entrypoint)(void), pagemap_t *pagemap,
                                  char *name, args_t args) {
-
-  k_debug("thread alloc");
-
   thread_t *thread = kmalloc(sizeof(thread_t));
 
   if (thread_count > INITIAL_THREAD_BUFFER) {
@@ -318,12 +308,10 @@ static thread_t *thread_allocate(void (*entrypoint)(void), pagemap_t *pagemap,
   return thread;
 }
 
-SPINLOCK_DEFINE(thread_start_lock);
-
 thread_t *thread_start(void (*entrypoint)(void), pagemap_t *pagemap, char *name,
                        uint8_t flags, args_t args) {
+
   spinlock_acquire(&thread_start_lock);
-  k_debug("thread start");
 
   if (flags != FLAGS_NONE && flags != 0) {
     k_todo("Thread Flags");
@@ -345,19 +333,12 @@ thread_t *thread_start(void (*entrypoint)(void), pagemap_t *pagemap, char *name,
 void preempt() {
   spinlock_acquire(&scheduler_lock);
 
-  // k_debug("preempt");
-
   if (!thread_count) {
     // Asked to preempt with no threads! just wait a bit and hope for some work.
     apic_interrupt_ms(500);
     spinlock_release(&scheduler_lock);
     return;
   }
-
-  // if (thread_count == 1) {
-  // apic_interrupt_ms(BASE_PREEMPT_QUANTUM_MS * (running_thread->priority +
-  // 1)); spinlock_release(&scheduler_lock); return;
-  //}
 
   if (running_thread != NULL) {
     last_running_thread = running_thread;
@@ -427,12 +408,10 @@ void preempt() {
   }
 
   if (!new_rsp) {
-    k_err("Bad stack ptr");
+    panic("Bad stack ptr");
     spinlock_release(&scheduler_lock);
     return;
   }
-
-  // k_debug("preempt done");
 
   spinlock_release(&scheduler_lock);
   apic_interrupt_ms(BASE_PREEMPT_QUANTUM_MS * (running_thread->priority + 1));

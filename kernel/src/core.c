@@ -227,14 +227,13 @@ SPINLOCK_DEFINE(aa);
 void kmain_thread(void) {
   k_log("Starting main kernel thread.");
 
-  // thread_start((void *)test, NULL, "test", FLAGS_NONE, ARGS_NONE);
-  // thread_start((void *)test, NULL, "test", FLAGS_NONE, ARGS_NONE);
-  // thread_start((void *)test, NULL, "test", FLAGS_NONE, ARGS_NONE);
-  // thread_start((void *)test, NULL, "test", FLAGS_NONE, ARGS_NONE);
+  thread_start((void *)test2, NULL, "test", FLAGS_NONE, ARGS_NONE);
+  thread_start((void *)test2, NULL, "test", FLAGS_NONE, ARGS_NONE);
+  thread_start((void *)test2, NULL, "test", FLAGS_NONE, ARGS_NONE);
+  thread_start((void *)test2, NULL, "test", FLAGS_NONE, ARGS_NONE);
   thread_t *t =
       thread_start((void *)test2, NULL, "test2", FLAGS_NONE, ARGS_NONE);
   thread_start((void *)test1, NULL, "test1", FLAGS_NONE, ARGS(t));
-  // thread_start((void *)test, NULL, "test", FLAGS_NONE, ARGS_NONE);
 
   thread_sleep(t);
 }
@@ -347,7 +346,6 @@ void kmain(void) {
 
   k_ok("Bootstrap APIC Setup");
 
-#if 0
   uint64_t apic_old_time = get_apic_ticks();
   uint64_t pit_old_time = get_pit_ticks();
 
@@ -367,7 +365,6 @@ void kmain(void) {
     k_test_pass("APIC Sleep");
     set_state(APIC_INITIALIZED, 0xf0);
   }
-#endif
 
   bootstrap_acpi();
 
