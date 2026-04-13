@@ -69,7 +69,6 @@ void dump_threads() {
 SPINLOCK_DEFINE(reorder_lock);
 
 void reorder_threads_list() {
-  __asm__ __volatile__("cli");
   spinlock_acquire(&reorder_lock);
   k_debug("reorder threads list");
 
@@ -86,17 +85,13 @@ void reorder_threads_list() {
   }
   k_debug("reorder threads list done");
 
-  spinlock_release_no_sti(&reorder_lock);
+  spinlock_release(&reorder_lock);
 }
 
 thread_t *thread_self(void) {
-  __asm__ __volatile__("cli");
-
   spinlock_acquire(&threads_lock);
-  k_debug("thread self");
-
   thread_t *t = running_thread;
-  spinlock_release_no_sti(&threads_lock);
+  spinlock_release(&threads_lock);
   return t;
 }
 
@@ -297,7 +292,7 @@ static thread_t *thread_allocate(void (*entrypoint)(void), pagemap_t *pagemap,
     thread->pagemap = kernel_pagemap;
   }
 
-  thread->kernel_thread = pagemap == kernel_pagemap;
+  thread->kernel_thread = thread->pagemap == kernel_pagemap;
 
   thread->priority = (thread->kernel_thread ? KERNEL_THREAD_MAX_PRIORITY
                                             : USER_THREAD_MAX_PRIORITY);
@@ -348,13 +343,9 @@ thread_t *thread_start(void (*entrypoint)(void), pagemap_t *pagemap, char *name,
 }
 
 void preempt() {
-  __asm__ __volatile__("cli");
-
-  spinlock_release(&scheduler_lock);
-
   spinlock_acquire(&scheduler_lock);
 
-  k_debug("preempt");
+  // k_debug("preempt");
 
   if (!thread_count) {
     // Asked to preempt with no threads! just wait a bit and hope for some work.
@@ -362,6 +353,11 @@ void preempt() {
     spinlock_release(&scheduler_lock);
     return;
   }
+
+  // if (thread_count == 1) {
+  // apic_interrupt_ms(BASE_PREEMPT_QUANTUM_MS * (running_thread->priority +
+  // 1)); spinlock_release(&scheduler_lock); return;
+  //}
 
   if (running_thread != NULL) {
     last_running_thread = running_thread;
@@ -405,6 +401,13 @@ void preempt() {
     running_thread->allotment--;
   }
 
+  if (last_running_thread == running_thread) {
+    apic_interrupt_ms(BASE_PREEMPT_QUANTUM_MS * (running_thread->priority + 1));
+
+    spinlock_release(&scheduler_lock);
+    return;
+  }
+
   switch_to_pagemap(running_thread->pagemap);
 
   switch_tss_stack((uintptr_t)running_thread->stack_bounds);
@@ -413,12 +416,10 @@ void preempt() {
 
   running_thread->status = STATUS_RUNNING;
 
-  apic_interrupt_ms(BASE_PREEMPT_QUANTUM_MS * (running_thread->priority + 1));
-
   uint64_t new_rsp = running_thread->stack_ptr;
   uint64_t *old_rsp;
 
-  if (last_running_thread && last_running_thread != running_thread) {
+  if (last_running_thread) {
     last_running_thread->status = STATUS_READY;
     old_rsp = &last_running_thread->stack_ptr;
   } else {
@@ -431,7 +432,10 @@ void preempt() {
     return;
   }
 
-  k_debug("preempt done");
+  // k_debug("preempt done");
+
+  spinlock_release(&scheduler_lock);
+  apic_interrupt_ms(BASE_PREEMPT_QUANTUM_MS * (running_thread->priority + 1));
 
   task_switch(&scheduler_lock, old_rsp, new_rsp);
 }
@@ -440,5 +444,5 @@ void setup_scheduler() {
   threads = kmalloc(sizeof(thread_t *) * INITIAL_THREAD_BUFFER);
   sleeping_threads = kmalloc(sizeof(thread_t *) * INITIAL_THREAD_BUFFER);
 
-  apic_interrupt_ms(BASE_PREEMPT_QUANTUM_MS * 4);
+  apic_interrupt_ms(BASE_PREEMPT_QUANTUM_MS);
 }

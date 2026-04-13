@@ -1,4 +1,5 @@
 #include "header/spinlock.h"
+#include "../util/header/printf.h"
 #include "stdbool.h"
 #include "stdint.h"
 
@@ -16,6 +17,8 @@ inline void spinlock_acquire(spinlock_t *lock) {
                        : "memory");
   while (!__sync_bool_compare_and_swap(&lock->locked, false, true)) {
     while (lock->locked) {
+      serial_printf_("spinning");
+
       asm volatile("pause" : : : "memory");
     }
   }

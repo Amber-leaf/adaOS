@@ -38,8 +38,6 @@ SPINLOCK_DEFINE(log_lock);
 void k_debug(char *format, ...) {
 #ifdef DBG
   spinlock_acquire(&log_lock);
-  serial_printf("debug\n");
-
   va_list va;
   va_start(va, format);
 
@@ -63,9 +61,6 @@ void k_debug(char *format, ...) {
   set_text_colour(PLAIN_TEXT_COLOUR);
   crlf();
 #endif
-
-  serial_printf("debug done\n");
-
   spinlock_release(&log_lock);
 #endif
 }

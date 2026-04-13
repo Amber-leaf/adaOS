@@ -12,12 +12,12 @@ thread_init_trampoline:
     mov rcx, r13
     mov r8,  r14
     mov r9,  r15
+
+    sti
+
     ret
 
-
 task_switch:
-    cli
-
     push rbx
     push rbp
     push r12
