@@ -15,7 +15,6 @@
 #define STATUS_READY 0
 #define STATUS_RUNNING 1
 #define STATUS_ASLEEP 2
-#define STATUS_ZOMBIE 3
 
 #define FLAGS_NONE 1 << 0
 
@@ -60,6 +59,9 @@ typedef struct thread {
   bool kernel_thread;
 
   uint8_t status;
+
+  bool zombie;
+
   uint8_t priority;
   int32_t allotment;
 

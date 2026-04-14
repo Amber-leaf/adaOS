@@ -129,7 +129,7 @@ void thread_await_death() {
 
   spinlock_acquire(&scheduler_lock);
 
-  running_thread->status = STATUS_ZOMBIE;
+  running_thread->zombie = true;
 
   in_queue_thread_index = 0;
 
@@ -363,10 +363,6 @@ retry:
 
   running_thread = threads[in_queue_thread_index++];
 
-  // if (running_thread->status == STATUS_ZOMBIE) {
-  // goto retry;
-  //}
-
   if (running_thread->allotment <= 0) {
     running_thread->priority++;
     if (running_thread->priority > NUM_QUEUES) {
@@ -392,19 +388,13 @@ retry:
 
   running_thread->times_ran++;
 
-  if (running_thread->status == STATUS_READY) {
-    running_thread->status = STATUS_RUNNING;
-  }
+  running_thread->status = STATUS_RUNNING;
 
   uint64_t new_rsp = running_thread->stack_ptr;
   uint64_t *old_rsp;
 
   if (last_running_thread) {
-    k_debug("old status for %s: %d", last_running_thread->name,
-            last_running_thread->status);
-    if (last_running_thread->status != STATUS_ZOMBIE) {
-      last_running_thread->status = STATUS_READY;
-    }
+    last_running_thread->status = STATUS_READY;
     old_rsp = &last_running_thread->stack_ptr;
   } else {
     old_rsp = &new_rsp;
