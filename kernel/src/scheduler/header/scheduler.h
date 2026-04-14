@@ -15,6 +15,7 @@
 #define STATUS_READY 0
 #define STATUS_RUNNING 1
 #define STATUS_ASLEEP 2
+#define STATUS_ZOMBIE 3
 
 #define FLAGS_NONE 1 << 0
 
@@ -86,5 +87,7 @@ thread_t *thread_self();
 void thread_sleep(thread_t *thread);
 
 void thread_awake(thread_t *thread);
+
+void pop_thread(thread_t *thread);
 
 #endif

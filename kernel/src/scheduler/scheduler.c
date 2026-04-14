@@ -9,6 +9,7 @@
 #include "../util/header/log.h"
 #include "../util/header/panic.h"
 #include "../util/header/printf.h"
+#include "workers/header/reaper.h"
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -31,6 +32,7 @@
 SPINLOCK_DEFINE(scheduler_lock);
 SPINLOCK_DEFINE(threads_lock);
 SPINLOCK_DEFINE(thread_start_lock);
+SPINLOCK_DEFINE(reorder_lock);
 
 thread_id_t new_id = 0;
 
@@ -67,10 +69,8 @@ void dump_threads() {
   spinlock_release(&threads_lock);
 }
 
-SPINLOCK_DEFINE(reorder_lock);
-
 void reorder_threads_list() {
-  spinlock_acquire(&reorder_lock);
+  // spinlock_acquire(&reorder_lock);
 
   for (uint32_t i = 1; i < thread_count; i++) {
     struct thread *key = threads[i];
@@ -84,7 +84,7 @@ void reorder_threads_list() {
     threads[j + 1] = key;
   }
 
-  spinlock_release(&reorder_lock);
+  // spinlock_release(&reorder_lock);
 }
 
 thread_t *thread_self(void) {
@@ -94,7 +94,7 @@ thread_t *thread_self(void) {
   return t;
 }
 
-static void pop_thread(thread_t *thread) {
+void pop_thread(thread_t *thread) {
   spinlock_acquire(&scheduler_lock);
 
   // TODO: Shrink array if possible once done.
@@ -121,26 +121,19 @@ static void pop_thread(thread_t *thread) {
 
   in_queue_thread_index = 0;
 
-  spinlock_release(&threads_lock);
-}
-
-void thread_destroy(thread_t *thread) {
-  pop_thread(thread);
-
-  spinlock_acquire(&scheduler_lock);
-
-  // kfree(thread->stack_base);
-  // kfree(thread);
-  //  TODO: reaper or something similar
-  in_queue_thread_index = 0;
-
   spinlock_release(&scheduler_lock);
 }
 
 void thread_await_death() {
-  k_debug("Thread %d exiting", running_thread->id);
+  k_debug("Thread %d (%s) exiting", running_thread->id, running_thread->name);
 
-  thread_destroy(running_thread);
+  spinlock_acquire(&scheduler_lock);
+
+  running_thread->status = STATUS_ZOMBIE;
+
+  in_queue_thread_index = 0;
+
+  spinlock_release(&scheduler_lock);
 
   while (true) {
   }
@@ -310,7 +303,6 @@ static thread_t *thread_allocate(void (*entrypoint)(void), pagemap_t *pagemap,
 
 thread_t *thread_start(void (*entrypoint)(void), pagemap_t *pagemap, char *name,
                        uint8_t flags, args_t args) {
-
   spinlock_acquire(&thread_start_lock);
 
   if (flags != FLAGS_NONE && flags != 0) {
@@ -364,11 +356,16 @@ void preempt() {
     }
   }
 
+retry:
   if (in_queue_thread_index > queue_end_index) {
     in_queue_thread_index = 0;
   }
 
   running_thread = threads[in_queue_thread_index++];
+
+  // if (running_thread->status == STATUS_ZOMBIE) {
+  // goto retry;
+  //}
 
   if (running_thread->allotment <= 0) {
     running_thread->priority++;
@@ -395,13 +392,19 @@ void preempt() {
 
   running_thread->times_ran++;
 
-  running_thread->status = STATUS_RUNNING;
+  if (running_thread->status == STATUS_READY) {
+    running_thread->status = STATUS_RUNNING;
+  }
 
   uint64_t new_rsp = running_thread->stack_ptr;
   uint64_t *old_rsp;
 
   if (last_running_thread) {
-    last_running_thread->status = STATUS_READY;
+    k_debug("old status for %s: %d", last_running_thread->name,
+            last_running_thread->status);
+    if (last_running_thread->status != STATUS_ZOMBIE) {
+      last_running_thread->status = STATUS_READY;
+    }
     old_rsp = &last_running_thread->stack_ptr;
   } else {
     old_rsp = &new_rsp;
@@ -424,4 +427,7 @@ void setup_scheduler() {
   sleeping_threads = kmalloc(sizeof(thread_t *) * INITIAL_THREAD_BUFFER);
 
   apic_interrupt_ms(BASE_PREEMPT_QUANTUM_MS);
+
+  thread_start((void *)reaper_t_main, NULL, "Reaper", FLAGS_NONE,
+               ARGS(&thread_count, &threads));
 }

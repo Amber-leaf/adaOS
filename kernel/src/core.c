@@ -211,7 +211,6 @@ void test1(thread_t *te) {
     } else {
       i++;
     }
-    __asm__ __volatile__("sti");
   }
 }
 
@@ -221,8 +220,6 @@ void test2(void) {
     k_debug("running %d at prio %d; %s", t->id, t->priority, t->name);
   }
 }
-
-SPINLOCK_DEFINE(aa);
 
 void kmain_thread(void) {
   k_log("Starting main kernel thread.");
@@ -236,6 +233,8 @@ void kmain_thread(void) {
   thread_start((void *)test1, NULL, "test1", FLAGS_NONE, ARGS(t));
 
   thread_sleep(t);
+
+  k_debug("dying");
 }
 
 // Main boot entrypoint.

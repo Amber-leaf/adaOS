@@ -1,3 +1,7 @@
+#ifndef SPINLOCK_H_
+#define SPINLOCK_H_
+
+
 #include "stdint.h"
 #include "stdbool.h"
 
@@ -12,3 +16,5 @@ bool spinlock_try(spinlock_t *lock);
 void spinlock_acquire(spinlock_t *lock);
 void spinlock_release(spinlock_t *lock);
 void spinlock_release_no_sti(spinlock_t *lock);
+
+#endif
