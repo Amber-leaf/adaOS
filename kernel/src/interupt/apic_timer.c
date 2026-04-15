@@ -1,5 +1,4 @@
 #include "../scheduler/header/scheduler.h"
-#include "../util/header/log.h"
 
 #include <stdbool.h>
 #include <stdint.h>

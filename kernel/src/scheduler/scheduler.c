@@ -140,7 +140,8 @@ void thread_await_death() {
 }
 
 void thread_yield() {
-  thread_self()->allotment = MAX_ALLOTMENT;
+  // todo: reset allotment
+
   preempt();
 }
 
@@ -356,7 +357,6 @@ void preempt() {
     }
   }
 
-retry:
   if (in_queue_thread_index > queue_end_index) {
     in_queue_thread_index = 0;
   }
@@ -401,12 +401,11 @@ retry:
   }
 
   if (!new_rsp) {
-    panic("Bad stack ptr");
-    spinlock_release(&scheduler_lock);
-    return;
+    panic("Bad stack pointer!");
   }
 
   spinlock_release(&scheduler_lock);
+
   apic_interrupt_ms(BASE_PREEMPT_QUANTUM_MS * (running_thread->priority + 1));
 
   task_switch(&scheduler_lock, old_rsp, new_rsp);

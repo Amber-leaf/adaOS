@@ -162,7 +162,7 @@ int64_t get_boot_time(void) {
   return bootime_request.response->timestamp;
 }
 
-static char *version_string = "0.0.6";
+static char *version_string = "0.0.7";
 
 void print_banner(void) {
   set_text_colour(0xe6a6a1);
@@ -233,8 +233,6 @@ void kmain_thread(void) {
   thread_start((void *)test1, NULL, "test1", FLAGS_NONE, ARGS(t));
 
   thread_sleep(t);
-
-  k_debug("dying");
 }
 
 // Main boot entrypoint.
@@ -265,11 +263,11 @@ void kmain(void) {
 
   setup_gdt();
   set_state(GDT_INITIALIZED, true);
-  k_ok("GDT Init");
+  k_ok("Setup GDT");
 
   setup_idt();
   set_state(IDT_INITIALIZED, true);
-  k_ok("IDT Init");
+  k_ok("Setup IDT");
 
   setup_pic();
   set_state(PIC_INITIALIZED, true);
