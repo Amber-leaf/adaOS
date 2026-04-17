@@ -24,6 +24,7 @@ void setup_random(uint32_t seed) {
   local_state = *state;
 }
 
+// note that this is not cryptographicly secure.
 uint32_t random_uint32() {
   mt_state_t *state = &local_state;
   uint32_t *state_array = &(state->state_array[0]);
@@ -62,7 +63,7 @@ uint32_t random_uint32() {
   return z;
 }
 
-// note that this is not cryptographic secure. (min - max]
+// note that this is not cryptographicly secure. (min - max]
 uint32_t random_range(uint32_t min, uint32_t max) {
   if (min > max) {
     k_err("Bad random range!");
