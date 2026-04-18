@@ -101,7 +101,7 @@ void setup_serial(uint32_t baud) {
   WRITE_REG(DIVISOR_LSB, lsb);       // set divisor for baud rate
   WRITE_REG(DIVISOR_MSB, 0x00);      // high byte of previous
   WRITE_REG(LINE_CONTROL, 0x03);     // set 8N1 mode
-  WRITE_REG(FIFO, 0x07);             // set  FIFO with 1 byte threshold
+  WRITE_REG(FIFO, 0x07);             // set FIFO with 1 byte threshold
   WRITE_REG(MODEM_CONTROL, 0x0B);    // enable the irqs
   WRITE_REG(MODEM_CONTROL, 0x1E);    // enable loopback for testing
   WRITE_REG(IO, TEST_BYTE);

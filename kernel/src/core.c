@@ -200,39 +200,39 @@ void print_banner(void) {
   print_free_ram();
 }
 
-void test1(thread_t *te) {
-  uint32_t i = 0;
-  while (true) {
-    thread_t *t = thread_self();
-    k_debug("running %d at prio %d; %s", t->id, t->priority, t->name);
-    if (i == 100) {
-      thread_awake(te);
-      i++;
-    } else {
-      i++;
-    }
-  }
-}
+int done = 0;
 
-void test2(void) {
-  while (true) {
-    thread_t *t = thread_self();
-    k_debug("running %d at prio %d; %s", t->id, t->priority, t->name);
-  }
+static thread_condition_t c_cond = {.waiters = NULL, .num_waiters = 0};
+static thread_condition_t *c = &c_cond;
+
+SPINLOCK_DEFINE(m);
+
+void child(void) {
+  spinlock_acquire(&m);
+  k_debug("child");
+  done = 1;
+  thread_condition_signal(c);
+  k_debug("child done");
+
+  spinlock_release(&m);
 }
 
 void kmain_thread(void) {
   k_log("Starting main kernel thread.");
 
-  thread_start((void *)test2, NULL, "test", FLAGS_NONE, ARGS_NONE);
-  thread_start((void *)test2, NULL, "test", FLAGS_NONE, ARGS_NONE);
-  thread_start((void *)test2, NULL, "test", FLAGS_NONE, ARGS_NONE);
-  thread_start((void *)test2, NULL, "test", FLAGS_NONE, ARGS_NONE);
-  thread_t *t =
-      thread_start((void *)test2, NULL, "test2", FLAGS_NONE, ARGS_NONE);
-  thread_start((void *)test1, NULL, "test1", FLAGS_NONE, ARGS(t));
+  k_debug("parent start");
 
-  thread_sleep(t);
+  spinlock_acquire(&m);
+
+  thread_condition_init(c);
+
+  thread_start(child, NULL, "Child", FLAGS_NONE, ARGS_NONE);
+
+  while (done == 0)
+    thread_condition_wait(c, m);
+  spinlock_release(&m);
+
+  k_debug("parent end");
 }
 
 // Main boot entrypoint.

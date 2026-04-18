@@ -8,7 +8,7 @@ void reaper_t_main(uint32_t *thread_count, thread_t ***threads) {
   while (true) {
     for (uint32_t i = *thread_count; i-- > 0;) {
       thread_t *thread = (*threads)[i];
-      if (thread->zombie) {
+      if (thread->awaiting_death) {
         uint32_t id = thread->id;
         const char *name = thread->name;
 

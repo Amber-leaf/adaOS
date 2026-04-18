@@ -129,7 +129,7 @@ void thread_await_death() {
 
   spinlock_acquire(&scheduler_lock);
 
-  running_thread->zombie = true;
+  running_thread->awaiting_death = true;
 
   in_queue_thread_index = 0;
 
@@ -236,6 +236,41 @@ void thread_awake(thread_t *thread) {
   reorder_threads_list();
 
   spinlock_release(&threads_lock);
+}
+
+void thread_condition_init(thread_condition_t *cond) {
+  cond->waiters = kmalloc(sizeof(thread_t *) * THREAD_CONDITION_MAX_WAITERS);
+  cond->num_waiters = 0;
+}
+
+void thread_condition_wait(thread_condition_t *thread_condition,
+                           spinlock_t lock) {
+  if (!lock.locked) {
+    k_err("thread_condition_wait: expected locked lock to be passed!");
+    return;
+  }
+
+  spinlock_release(&lock);
+
+  k_debug("running thread is at: %p", running_thread);
+
+  thread_condition->waiters[thread_condition->num_waiters++] = running_thread;
+
+  k_debug("thread_cond is at: %p", thread_condition);
+
+  k_debug("lock is locked? %d", lock.locked);
+
+  thread_sleep(running_thread);
+
+  spinlock_acquire(&lock);
+
+  return;
+}
+
+void thread_condition_signal(thread_condition_t *thread_condition) {
+  for (uint64_t i = 0; i < thread_condition->num_waiters; i++) {
+    thread_awake(thread_condition->waiters[i]);
+  }
 }
 
 void thread_debug(char *s) {
@@ -417,6 +452,6 @@ void setup_scheduler() {
 
   apic_interrupt_ms(BASE_PREEMPT_QUANTUM_MS);
 
-  thread_start((void *)reaper_t_main, NULL, "Reaper", FLAGS_NONE,
-               ARGS(&thread_count, &threads));
+  // thread_start((void *)reaper_t_main, NULL, "Reaper", FLAGS_NONE,
+  //            ARGS(&thread_count, &threads));
 }

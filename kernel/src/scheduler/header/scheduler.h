@@ -3,14 +3,14 @@
 
 #include "../../memory/virtual/header/vmm.h"
 #include "../../util/header/printf.h"
+#include "spinlock.h"
 
 #include <stddef.h>
 #include <stdint.h>
 
 #define SPINLOCK_DEFINE(name) static spinlock_t name = SPINLOCK_INIT_VALUE
 
-#define SIGKILL 0;
-#define SIGSTOP 1;
+#define THREAD_CONDITION_MAX_WAITERS 32
 
 #define STATUS_READY 0
 #define STATUS_RUNNING 1
@@ -60,7 +60,7 @@ typedef struct thread {
 
   uint8_t status;
 
-  bool zombie;
+  bool awaiting_death;
 
   uint8_t priority;
   int32_t allotment;
@@ -71,6 +71,11 @@ typedef struct thread {
 
   char *name;
 } thread_t;
+
+typedef struct thread_condition {
+  thread_t** waiters;
+  uint64_t num_waiters;
+} thread_condition_t;
 
 typedef struct args {
   uint64_t arg1, arg2, arg3, arg4, arg5, arg6;
@@ -89,6 +94,12 @@ thread_t *thread_self();
 void thread_sleep(thread_t *thread);
 
 void thread_awake(thread_t *thread);
+
+void thread_condition_signal(thread_condition_t* thread_condition);
+
+void thread_condition_wait(thread_condition_t* thread_condition, spinlock_t lock);
+
+void thread_condition_init(thread_condition_t *cond);
 
 void pop_thread(thread_t *thread);
 
