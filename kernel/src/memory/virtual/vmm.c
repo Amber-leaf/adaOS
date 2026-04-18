@@ -184,7 +184,7 @@ bool unmap_page(pagemap_t *pagemap, uintptr_t virt_addr) {
 
 void switch_to_pagemap(pagemap_t *pagemap) {
   if (!pagemap || !pagemap->top_level) {
-    panic("Attempted to switch to an invalid pagemap\n");
+    panic("Attempted to switch to a NULL pagemap!");
     return;
   }
 

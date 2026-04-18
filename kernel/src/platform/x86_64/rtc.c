@@ -104,7 +104,7 @@ uint64_t get_unix_timestamp(void) {
   }
 
   if (century != 0x20) {
-    k_wrn("Nonsensical century `%x`.", century);
+    k_wrn("Unlikely century '%x'. Something is probably wrong.", century);
   }
 
   char buf[10];
