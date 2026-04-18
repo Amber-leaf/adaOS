@@ -147,7 +147,7 @@ struct limine_framebuffer *get_framebuffer(void) {
   if (framebuffer_request.response == NULL ||
       framebuffer_request.response->framebuffer_count < 1) {
     // we can't print an error on screen, so put it out over serial.
-    serial_printf_("Error getting framebuffer! Halting.")
+    serial_printf_("Error getting framebuffer! Halting.");
     hcf();
   }
 
