@@ -100,6 +100,10 @@ void apic_start_timer() {
 }
 
 void apic_sleep_ms(uint32_t ms) {
+#ifndef DISABLE_TIMER_INTERRUPTS
+  return;
+#endif
+
   interrupt_as_timer = true;
   uint64_t start_ms = get_apic_ticks();
   uint64_t end_ms = start_ms + ms;
@@ -162,7 +166,9 @@ void bootstrap_apic() {
 
   apic_bootstrap_timer();
 
+#ifdef DISABLE_TIMER_INTERRUPTS
   apic_start_timer();
+#endif
 
   write_lvt_entry(APIC_LVT_THERMAL, 0xf2);
   write_lvt_entry(APIC_LVT_ERROR, 0xf6);

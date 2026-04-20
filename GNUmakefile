@@ -2,7 +2,7 @@
 .SUFFIXES:
 
 # Default user QEMU flags. These are appended to the QEMU command calls.
-QEMUFLAGS := -m 2G -M accel=tcg,smm=off -no-reboot -no-shutdown -audiodev pa,id=speaker -machine pcspk-audiodev=speaker --enable-kvm #-s -S #-chardev stdio,id=char0,logfile=serial.log,signal=off \
+QEMUFLAGS := -m 2G -M accel=tcg,smm=off -no-reboot -no-shutdown -audiodev pa,id=speaker -machine pcspk-audiodev=speaker -s -S #-chardev stdio,id=char0,logfile=serial.log,signal=off \
   -serial chardev:char0
 
 override IMAGE_NAME := adaOS

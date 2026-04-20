@@ -72,6 +72,9 @@ __attribute__((
 
 #define BOOT_CHIME
 
+// useful for debuging
+#define DISABLE_TIMER_INTERRUPTS
+
 #define PIT_SLEEP_TEST_MS 10
 #define PIT_SLEEP_TEST_TOLERANCE 1
 
@@ -147,7 +150,8 @@ struct limine_framebuffer *get_framebuffer(void) {
   if (framebuffer_request.response == NULL ||
       framebuffer_request.response->framebuffer_count < 1) {
     // we can't print an error on screen, so put it out over serial.
-    serial_printf_("Error getting framebuffer! Halting.");
+    serial_printf_(
+        "Error getting framebuffer! Halting."); // TODO: continue headlessly
     hcf();
   }
 
@@ -280,6 +284,7 @@ void kmain(void) {
   setup_pit();
   k_ok("Setup PIT as Bootstrap Timer");
 
+#ifdef DISABLE_TIMER_INTERRUPTS
   uint64_t old_time = get_pit_ticks();
   pit_sleep_ms(PIT_SLEEP_TEST_MS);
   uint64_t difference = get_pit_ticks() - old_time;
@@ -298,6 +303,7 @@ void kmain(void) {
     set_state(PIT_TIMER_RUNNING, true);
 #endif
   }
+#endif
 
   // 0x800 | 0x100 | 0x001
   write_msr(MSR_IA32_EFER, 0x901);
@@ -344,6 +350,7 @@ void kmain(void) {
 
   k_ok("Bootstrap APIC Setup");
 
+#ifndef DISABLE_TIMER_INTERRUPTS
   uint64_t apic_old_time = get_apic_ticks();
   uint64_t pit_old_time = get_pit_ticks();
 
@@ -363,6 +370,7 @@ void kmain(void) {
     k_test_pass("APIC Sleep");
     set_state(APIC_INITIALIZED, 0xf0);
   }
+#endif
 
   bootstrap_acpi();
 
