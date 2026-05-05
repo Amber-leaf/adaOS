@@ -103,4 +103,6 @@ void thread_condition_init(thread_condition_t *cond);
 
 void pop_thread(thread_t *thread);
 
+void dump_threads();
+
 #endif

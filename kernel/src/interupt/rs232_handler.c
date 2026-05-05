@@ -5,6 +5,7 @@
 #include "../header/core.h"
 #include "../memory/header/memmap.h"
 #include "../platform/x86_64/header/rtc.h"
+#include "../scheduler/header/scheduler.h"
 #include "../util/header/print_lowlevel.h"
 #include "../util/header/printf.h"
 #include "header/isr.h"
@@ -81,6 +82,7 @@ void rs232_irq(struct interrupt_cpu_status *context) {
     // Check against all commands.
     // TODO: make it support parameters and not have to be in descending
     // order of size.
+    ADD_COMMAND("threads", 7, dump_threads());
     ADD_COMMAND("memmap", 6, serial_print_mem_map());
     ADD_COMMAND("clear", 5, clear());
     ADD_COMMAND("free", 4, serial_print_free_ram());

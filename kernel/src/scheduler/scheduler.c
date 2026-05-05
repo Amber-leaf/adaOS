@@ -66,6 +66,16 @@ void dump_threads() {
     k_debug("- times ran: %d", thread->times_ran);
     k_debug("- status: %d", thread->status);
   }
+
+  for (uint8_t i = 0; i < sleeping_thread_count; i++) {
+    thread_t *thread = sleeping_threads[i];
+    k_debug("[sleeping thread %d]:", thread->id);
+    k_debug("- name: %s", thread->name);
+    k_debug("- priority: %d", thread->priority);
+    k_debug("- allotment: %d", thread->allotment);
+    k_debug("- times ran: %d", thread->times_ran);
+    k_debug("- status: %d", thread->status);
+  }
   spinlock_release(&threads_lock);
 }
 
@@ -202,7 +212,7 @@ void thread_awake(thread_t *thread) {
     k_err("thread_awake: thread %d is not sleeping (status %d)", thread->id,
           thread->status);
     spinlock_release(&threads_lock);
-    return;
+    // return;
   }
 
   if (thread_count >= INITIAL_THREAD_BUFFER) {
@@ -247,22 +257,22 @@ void thread_condition_wait(thread_condition_t *thread_condition,
                            spinlock_t lock) {
   if (!lock.locked) {
     k_err("thread_condition_wait: expected locked lock to be passed!");
-    return;
+    // return;
   }
 
-  spinlock_release(&lock);
+  // spinlock_release(&lock);
 
-  k_debug("running thread is at: %p", running_thread);
+  // k_debug("running thread is at: %p", running_thread);
 
   thread_condition->waiters[thread_condition->num_waiters++] = running_thread;
 
-  k_debug("thread_cond is at: %p", thread_condition);
+  // k_debug("thread_cond is at: %p", thread_condition);
 
-  k_debug("lock is locked? %d", lock.locked);
+  // k_debug("lock is locked? %d", lock.locked);
 
   thread_sleep(running_thread);
 
-  spinlock_acquire(&lock);
+  // spinlock_acquire(&lock);
 
   return;
 }
@@ -361,6 +371,8 @@ thread_t *thread_start(void (*entrypoint)(void), pagemap_t *pagemap, char *name,
 void preempt() {
   spinlock_acquire(&scheduler_lock);
 
+  // k_debug("Preempt");
+
   if (!thread_count) {
     // Asked to preempt with no threads! just wait a bit and hope for some work.
     apic_interrupt_ms(500);
@@ -409,6 +421,8 @@ void preempt() {
   } else {
     running_thread->allotment--;
   }
+
+  // k_debug("switch to %d (%s)", running_thread->id, running_thread->name);
 
   if (last_running_thread == running_thread) {
     apic_interrupt_ms(BASE_PREEMPT_QUANTUM_MS * (running_thread->priority + 1));

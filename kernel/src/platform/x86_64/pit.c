@@ -35,6 +35,7 @@ void set_speaker_frequency(uint32_t frequency) {
 void play_sound(uint32_t frequency) {
   if (frequency == 0) {
     sound_off();
+    return;
   }
 
   set_speaker_frequency(frequency);

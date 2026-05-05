@@ -73,7 +73,7 @@ __attribute__((
 #define BOOT_CHIME
 
 // useful for debuging
-#define DISABLE_TIMER_INTERRUPTS
+// #define DISABLE_TIMER_INTERRUPTS
 
 #define PIT_SLEEP_TEST_MS 10
 #define PIT_SLEEP_TEST_TOLERANCE 1
@@ -213,28 +213,29 @@ static thread_condition_t *c = &c_cond;
 SPINLOCK_DEFINE(m);
 
 void child(void) {
-  spinlock_acquire(&m);
+  // spinlock_acquire(&m);
   k_debug("child");
   done = 1;
   thread_condition_signal(c);
   k_debug("child done");
 
-  spinlock_release(&m);
+  // spinlock_release(&m);
 }
 
 void kmain_thread(void) {
   k_log("Starting main kernel thread.");
 
-  k_debug("parent start");
-
   spinlock_acquire(&m);
+  k_debug("parent start");
 
   thread_condition_init(c);
 
   thread_start(child, NULL, "Child", FLAGS_NONE, ARGS_NONE);
-
-  while (done == 0)
+  
+  while (done == 0) {
+    k_debug("waiting");
     thread_condition_wait(c, m);
+  }
   spinlock_release(&m);
 
   k_debug("parent end");
@@ -284,7 +285,7 @@ void kmain(void) {
   setup_pit();
   k_ok("Setup PIT as Bootstrap Timer");
 
-#ifdef DISABLE_TIMER_INTERRUPTS
+#ifndef DISABLE_TIMER_INTERRUPTS
   uint64_t old_time = get_pit_ticks();
   pit_sleep_ms(PIT_SLEEP_TEST_MS);
   uint64_t difference = get_pit_ticks() - old_time;

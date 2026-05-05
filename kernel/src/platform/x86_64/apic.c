@@ -100,7 +100,7 @@ void apic_start_timer() {
 }
 
 void apic_sleep_ms(uint32_t ms) {
-#ifndef DISABLE_TIMER_INTERRUPTS
+#ifdef DISABLE_TIMER_INTERRUPTS
   return;
 #endif
 
@@ -166,7 +166,7 @@ void bootstrap_apic() {
 
   apic_bootstrap_timer();
 
-#ifdef DISABLE_TIMER_INTERRUPTS
+#ifndef DISABLE_TIMER_INTERRUPTS
   apic_start_timer();
 #endif
 
