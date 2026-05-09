@@ -231,9 +231,9 @@ void kmain_thread(void) {
   thread_condition_init(c);
 
   thread_start(child, NULL, "Child", FLAGS_NONE, ARGS_NONE);
-  
+
   while (done == 0) {
-    k_debug("waiting");
+    // k_debug("waiting");
     thread_condition_wait(c, m);
   }
   spinlock_release(&m);

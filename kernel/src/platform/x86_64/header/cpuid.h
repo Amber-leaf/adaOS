@@ -14,6 +14,8 @@ typedef struct cpuid_regs {
 
 extern bool check_cpuid();
 
+cpuid_regs_t cpuid(uint32_t leaf, uint32_t subleaf);
+
 char* get_cpu_vendor();
 char* get_cpu_name();
 

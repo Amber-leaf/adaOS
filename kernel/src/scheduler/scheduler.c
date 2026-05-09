@@ -162,7 +162,7 @@ void thread_sleep(thread_t *thread) {
   }
 
   spinlock_acquire(&scheduler_lock);
-  k_debug("thread sleep");
+  // k_debug("thread sleep");
 
   if (sleeping_thread_count >= INITIAL_THREAD_BUFFER) {
     k_err("thread_sleep: sleeping thread buffer full");
