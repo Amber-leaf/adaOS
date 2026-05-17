@@ -8,7 +8,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define SPINLOCK_DEFINE(name) static spinlock_t name = SPINLOCK_INIT_VALUE
+#define THREAD_CONDITION_STRUCT {.waiters = NULL, .num_waiters = 0}
+#define THREAD_CONDITION_INIT &(thread_condition_t)THREAD_CONDITION_STRUCT
 
 #define THREAD_CONDITION_MAX_WAITERS 32
 

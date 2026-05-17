@@ -162,7 +162,7 @@ void thread_sleep(thread_t *thread) {
   }
 
   spinlock_acquire(&scheduler_lock);
-  // k_debug("thread sleep");
+  k_debug("thread sleep");
 
   if (sleeping_thread_count >= INITIAL_THREAD_BUFFER) {
     k_err("thread_sleep: sleeping thread buffer full");
@@ -195,12 +195,17 @@ void thread_sleep(thread_t *thread) {
 
   spinlock_release(&scheduler_lock);
 
+  k_debug("thread status of %s: %d", running_thread->name,
+          running_thread->status);
+
   if (thread == running_thread) {
     preempt();
   }
 }
 
 void thread_awake(thread_t *thread) {
+  k_debug("thread_awake");
+
   if (thread == NULL) {
     k_err("thread_awake: NULL thread");
     return;
@@ -209,8 +214,8 @@ void thread_awake(thread_t *thread) {
   spinlock_acquire(&threads_lock);
 
   if (thread->status != STATUS_ASLEEP) {
-    k_err("thread_awake: thread %d is not sleeping (status %d)", thread->id,
-          thread->status);
+    k_wrn("thread_awake: thread %d (%s) is not sleeping (status %d)",
+          thread->id, thread->name, thread->status);
     spinlock_release(&threads_lock);
     // return;
   }
@@ -311,8 +316,6 @@ static thread_t *thread_allocate(void (*entrypoint)(void), pagemap_t *pagemap,
 
   thread->allotment = MAX_ALLOTMENT;
 
-  thread->status = STATUS_READY;
-
   thread->times_ran = 0;
 
   if (pagemap != NULL) {
@@ -349,6 +352,8 @@ static thread_t *thread_allocate(void (*entrypoint)(void), pagemap_t *pagemap,
 
 thread_t *thread_start(void (*entrypoint)(void), pagemap_t *pagemap, char *name,
                        uint8_t flags, args_t args) {
+
+  k_debug("c");
   spinlock_acquire(&thread_start_lock);
 
   if (flags != FLAGS_NONE && flags != 0) {
@@ -369,9 +374,8 @@ thread_t *thread_start(void (*entrypoint)(void), pagemap_t *pagemap, char *name,
 }
 
 void preempt() {
+  //__asm__ __volatile__("cli");
   spinlock_acquire(&scheduler_lock);
-
-  // k_debug("Preempt");
 
   if (!thread_count) {
     // Asked to preempt with no threads! just wait a bit and hope for some work.
@@ -422,7 +426,7 @@ void preempt() {
     running_thread->allotment--;
   }
 
-  // k_debug("switch to %d (%s)", running_thread->id, running_thread->name);
+  k_debug("Preempt to %d (%s)", running_thread->id, running_thread->name);
 
   if (last_running_thread == running_thread) {
     apic_interrupt_ms(BASE_PREEMPT_QUANTUM_MS * (running_thread->priority + 1));
@@ -443,7 +447,9 @@ void preempt() {
   uint64_t *old_rsp;
 
   if (last_running_thread) {
-    last_running_thread->status = STATUS_READY;
+    // if (last_running_thread->status == STATUS_RUNNING) {
+    // last_running_thread->status = STATUS_READY;
+    //}
     old_rsp = &last_running_thread->stack_ptr;
   } else {
     old_rsp = &new_rsp;
@@ -466,6 +472,8 @@ void setup_scheduler() {
 
   apic_interrupt_ms(BASE_PREEMPT_QUANTUM_MS);
 
-  // thread_start((void *)reaper_t_main, NULL, "Reaper", FLAGS_NONE,
-  //            ARGS(&thread_count, &threads));
+  thread_start((void *)reaper_t_main, NULL, "Reaper", FLAGS_NONE,
+               ARGS(&thread_count, &threads));
+
+  k_debug("a");
 }

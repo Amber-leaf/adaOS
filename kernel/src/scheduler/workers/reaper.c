@@ -19,6 +19,6 @@ void reaper_t_main(uint32_t *thread_count, thread_t ***threads) {
         k_debug("Reaped %d (%s)", id, name);
       }
     }
-    thread_yield();
+    // thread_yield();
   }
 }

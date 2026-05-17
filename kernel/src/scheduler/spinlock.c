@@ -17,7 +17,7 @@ inline void spinlock_acquire(spinlock_t *lock) {
                        : "memory");
   while (!__sync_bool_compare_and_swap(&lock->locked, false, true)) {
     while (lock->locked) {
-      serial_printf_("spinning");
+      serial_printf_("  -spinning on %s-  ", lock->debug_name);
 
       asm volatile("pause" : : : "memory");
     }

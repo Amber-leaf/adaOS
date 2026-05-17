@@ -151,7 +151,7 @@ struct limine_framebuffer *get_framebuffer(void) {
       framebuffer_request.response->framebuffer_count < 1) {
     // we can't print an error on screen, so put it out over serial.
     serial_printf_(
-        "Error getting framebuffer! Halting."); // TODO: continue headlessly
+        "Error getting framebuffer! Halt."); // TODO: continue headlessly
     hcf();
   }
 
@@ -167,7 +167,7 @@ int64_t get_boot_time(void) {
   return bootime_request.response->timestamp;
 }
 
-static char *version_string = "0.0.7";
+static char *version_string = "0.7";
 
 void print_banner(void) {
   set_text_colour(0xe6a6a1);
@@ -185,39 +185,39 @@ void print_banner(void) {
 
   printf_("The date is %s.\n\n", ts);
   printf_("Copyright (C) 2026 adaOS contributors.\n");
+  printf_("See LICENCE in the source directory for details.\n\n");
 
   print_random_logo();
-
-  set_text_colour(0xffff66);
-
-  printf_("Notice: Due to recent California and Colorado laws requiring age "
-          "verification\nfor all OS's, adaOS is not licensed for"
-          " use in California or Colorado.\nPlease, complain to your local "
-          "representatives! (see "
-          "https://www.house.gov/representatives/find-your-representative)\n");
-
-  set_text_colour(0xffffff);
-
-  printf_("See LICENCE in the source directory for details.\n");
-
-  crlf();
 
   print_free_ram();
 }
 
-int done = 0;
+int done0 = 0;
+int done1 = 0;
 
-static thread_condition_t c_cond = {.waiters = NULL, .num_waiters = 0};
-static thread_condition_t *c = &c_cond;
+static thread_condition_t *c = THREAD_CONDITION_INIT;
+
+static thread_condition_t *c1 = THREAD_CONDITION_INIT;
 
 SPINLOCK_DEFINE(m);
+SPINLOCK_DEFINE(m1);
 
 void child(void) {
   // spinlock_acquire(&m);
   k_debug("child");
-  done = 1;
+  done0 = 1;
   thread_condition_signal(c);
   k_debug("child done");
+
+  // spinlock_release(&m);
+}
+
+void child1(void) {
+  // spinlock_acquire(&m);
+  k_debug("child1");
+  done1 = 1;
+  thread_condition_signal(c1);
+  k_debug("child1 done");
 
   // spinlock_release(&m);
 }
@@ -226,17 +226,27 @@ void kmain_thread(void) {
   k_log("Starting main kernel thread.");
 
   spinlock_acquire(&m);
+  spinlock_acquire(&m1);
+
   k_debug("parent start");
 
   thread_condition_init(c);
+  thread_condition_init(c1);
 
   thread_start(child, NULL, "Child", FLAGS_NONE, ARGS_NONE);
+  thread_start(child1, NULL, "Child1", FLAGS_NONE, ARGS_NONE);
 
-  while (done == 0) {
+  while (done0 == 0) {
     // k_debug("waiting");
     thread_condition_wait(c, m);
   }
+
+  while (done1 == 0) {
+    thread_condition_wait(c1, m1);
+  }
+
   spinlock_release(&m);
+  spinlock_release(&m1);
 
   k_debug("parent end");
 }
@@ -245,6 +255,7 @@ void kmain_thread(void) {
 void kmain(void) {
   // Ensure the bootloader actually understands our base revision (see spec).
   if (LIMINE_BASE_REVISION_SUPPORTED == false) {
+    serial_printf_("Bad bootloader version. Halt.");
     hcf();
   }
 
@@ -390,6 +401,8 @@ void kmain(void) {
   k_ok("Started Scheduler");
 
   crlf();
+
+  k_debug("b");
 
   thread_start(kmain_thread, NULL, "Kernel main thread", FLAGS_NONE, ARGS_NONE);
 
