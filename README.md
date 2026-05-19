@@ -1,3 +1,5 @@
+# ! Development has moved to [https://git.isabelle.rest/issy/adaOS/](https://git.isabelle.rest/issy/adaOS/). This repo is very out of date !
+
 # adaOS
 A small, in development kernel.
 
